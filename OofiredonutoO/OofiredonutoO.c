@@ -6,31 +6,44 @@
 #define INF 0x7FFFFFFF
 #define NEGINF 0x80000000
 
+static int init_board[] = {
+	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
+};
+
 typedef struct board
 {
-    enum {white, black} color;
-    int tile[10][10];
-    int bridge[10][10];
+	enum { white, black } color;
+	int tile[10][10];
+	int bridge[10][10];
 
 
 } board;
 
 int read_board(char* chess_location, char* bridge_location, board* b) {
-    FILE* c_file = fopen(chess_location, "r");
-    FILE* b_file = fopen(bridge_location, "r");
-    if (c_file == NULL || b_file == NULL) {
-        printf("open file failed\n");
-        return -1;
-    }
-    int i = 0;
-    for (i = 0; i < 10; i++) {
-        fscanf(c_file, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", &(b->tile[i][0]), &(b->tile[i][1]), &(b->tile[i][2]), &(b->tile[i][3]), &(b->tile[i][4]), &(b->tile[i][5]), &(b->tile[i][6]), &(b->tile[i][7]), &(b->tile[i][8]), &(b->tile[i][9]));
-    }
-    for (i = 0; i < 10; i++) {
-        fscanf(b_file, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", &(b->bridge[i][0]), &(b->bridge[i][1]), &(b->bridge[i][2]), &(b->bridge[i][3]), &(b->bridge[i][4]), &(b->bridge[i][5]), &(b->bridge[i][6]), &(b->bridge[i][7]), &(b->bridge[i][8]), &(b->bridge[i][9]));
-    }
-    return 0;
-    
+	FILE* c_file = fopen(chess_location, "r");
+	FILE* b_file = fopen(bridge_location, "r");
+	if (c_file == NULL || b_file == NULL) {
+		printf("open file failed\n");
+		return -1;
+	}
+	int i = 0;
+	for (i = 0; i < 10; i++) {
+		fscanf(c_file, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", &(b->tile[i][0]), &(b->tile[i][1]), &(b->tile[i][2]), &(b->tile[i][3]), &(b->tile[i][4]), &(b->tile[i][5]), &(b->tile[i][6]), &(b->tile[i][7]), &(b->tile[i][8]), &(b->tile[i][9]));
+	}
+	for (i = 0; i < 10; i++) {
+		fscanf(b_file, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", &(b->bridge[i][0]), &(b->bridge[i][1]), &(b->bridge[i][2]), &(b->bridge[i][3]), &(b->bridge[i][4]), &(b->bridge[i][5]), &(b->bridge[i][6]), &(b->bridge[i][7]), &(b->bridge[i][8]), &(b->bridge[i][9]));
+	}
+	return 0;
+
 }
 
 int write_board(char* chess_location, char* bridge_location, board* b) {
@@ -38,30 +51,30 @@ int write_board(char* chess_location, char* bridge_location, board* b) {
 }
 
 void print_board(board* b) {
-    printf("current color: %d", b->color);
-    printf("tile:\n");
-    int i = 0;
-    for (i = 0; i < 10; i++) {
-        printf("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", &(b->tile[i][0]), &(b->tile[i][1]), &(b->tile[i][2]), &(b->tile[i][3]), &(b->tile[i][4]), &(b->tile[i][5]), &(b->tile[i][6]), &(b->tile[i][7]), &(b->tile[i][8]), &(b->tile[i][9]));
-    }
-    printf("bridge:\n");
-    for (i = 0; i < 10; i++) {
-        printf("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", &(b->bridge[i][0]), &(b->bridge[i][1]), &(b->bridge[i][2]), &(b->bridge[i][3]), &(b->bridge[i][4]), &(b->bridge[i][5]), &(b->bridge[i][6]), &(b->bridge[i][7]), &(b->bridge[i][8]), &(b->bridge[i][9]));
-    }
-    
+	printf("current color: %d", b->color);
+	printf("tile:\n");
+	int i = 0;
+	for (i = 0; i < 10; i++) {
+		printf("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", &(b->tile[i][0]), &(b->tile[i][1]), &(b->tile[i][2]), &(b->tile[i][3]), &(b->tile[i][4]), &(b->tile[i][5]), &(b->tile[i][6]), &(b->tile[i][7]), &(b->tile[i][8]), &(b->tile[i][9]));
+	}
+	printf("bridge:\n");
+	for (i = 0; i < 10; i++) {
+		printf("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", &(b->bridge[i][0]), &(b->bridge[i][1]), &(b->bridge[i][2]), &(b->bridge[i][3]), &(b->bridge[i][4]), &(b->bridge[i][5]), &(b->bridge[i][6]), &(b->bridge[i][7]), &(b->bridge[i][8]), &(b->bridge[i][9]));
+	}
+
 }
 
 int AI(int argc, char* argv[]) {
-    if (argc != 6) {
-        printf("error parameters input count\n");
-        return -1;
-    }
-    board init_board;
-    int r=read_board(argv[3], argv[4], &init_board);
-    if (r != 0) {
-        printf("error read board\n");
-        return -1;
-    }
+	if (argc != 6) {
+		printf("error parameters input count\n");
+		return -1;
+	}
+	board init_board;
+	int r = read_board(argv[3], argv[4], &init_board);
+	if (r != 0) {
+		printf("error read board\n");
+		return -1;
+	}
 
 }
 
@@ -69,24 +82,24 @@ int test() {
 
 }
 
-int main(int argc, char * argv[])
+int main(int argc, char* argv[])
 {
-    test();
-    printf("Hello world!\n");
-    board a = {
-        black,
-        {0},
-        {0},
-    };
-    printf("%d", a.color);
+	test();
+	printf("Hello world!\n");
+	board a = {
+		black,
+		{0},
+		{0},
+	};
+	printf("%d", a.color);
 
-    if (argc == 0) {
-        printf("must input correct parameters\n");
-    }
-    else
-    {
-        AI(argc, argv);
-    }
+	if (argc == 0) {
+		printf("must input correct parameters\n");
+	}
+	else
+	{
+		AI(argc, argv);
+	}
 
 }
 
