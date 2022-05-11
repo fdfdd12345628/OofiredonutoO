@@ -1,12 +1,14 @@
 ﻿#define _CRT_SECURE_NO_WARNINGS
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define DEPTH 8
 #define INF 0x7FFFFFFF
 #define NEGINF 0x80000000
 
-static int init_board[] = {
+static int init_board_content[] = {
 	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
 	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
 	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
@@ -27,6 +29,13 @@ typedef struct board
 
 
 } board;
+
+int init_board(board* b) {
+	b->color = -1;
+	memcpy(b->tile, init_board_content, sizeof(init_board_content));
+	memcpy(b->bridge, init_board_content, sizeof(init_board_content));
+	return 0;
+}
 
 int read_board(char* chess_location, char* bridge_location, board* b) {
 	FILE* c_file = fopen(chess_location, "r");
@@ -55,11 +64,11 @@ void print_board(board* b) {
 	printf("tile:\n");
 	int i = 0;
 	for (i = 0; i < 10; i++) {
-		printf("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", &(b->tile[i][0]), &(b->tile[i][1]), &(b->tile[i][2]), &(b->tile[i][3]), &(b->tile[i][4]), &(b->tile[i][5]), &(b->tile[i][6]), &(b->tile[i][7]), &(b->tile[i][8]), &(b->tile[i][9]));
+		printf("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", b->tile[i][0], b->tile[i][1], b->tile[i][2], b->tile[i][3], b->tile[i][4], b->tile[i][5], b->tile[i][6], b->tile[i][7], b->tile[i][8], b->tile[i][9]);
 	}
 	printf("bridge:\n");
 	for (i = 0; i < 10; i++) {
-		printf("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", &(b->bridge[i][0]), &(b->bridge[i][1]), &(b->bridge[i][2]), &(b->bridge[i][3]), &(b->bridge[i][4]), &(b->bridge[i][5]), &(b->bridge[i][6]), &(b->bridge[i][7]), &(b->bridge[i][8]), &(b->bridge[i][9]));
+		printf("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", b->bridge[i][0], b->bridge[i][1], b->bridge[i][2], b->bridge[i][3], b->bridge[i][4], b->bridge[i][5], b->bridge[i][6], b->bridge[i][7], b->bridge[i][8], b->bridge[i][9]);
 	}
 
 }
@@ -79,7 +88,11 @@ int AI(int argc, char* argv[]) {
 }
 
 int test() {
-
+	board a;
+	init_board(&a);
+	print_board(&a);
+	read_board("chess.txt", "bridge.txt", &a);
+	// print_board(&a);
 }
 
 int main(int argc, char* argv[])
@@ -91,7 +104,6 @@ int main(int argc, char* argv[])
 		{0},
 		{0},
 	};
-	printf("%d", a.color);
 
 	if (argc == 0) {
 		printf("must input correct parameters\n");
