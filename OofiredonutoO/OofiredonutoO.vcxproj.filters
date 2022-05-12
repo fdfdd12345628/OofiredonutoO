@@ -20,10 +20,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\bridge.txt">
+    <Text Include="bridge.txt">
       <Filter>資源檔</Filter>
     </Text>
-    <Text Include="..\chess.txt">
+    <Text Include="chess.txt">
       <Filter>資源檔</Filter>
     </Text>
   </ItemGroup>

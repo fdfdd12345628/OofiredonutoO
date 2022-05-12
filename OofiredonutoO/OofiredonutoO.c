@@ -7,6 +7,9 @@
 #define DEPTH 8
 #define INF 0x7FFFFFFF
 #define NEGINF 0x80000000
+#define NEXTMOVENUM 100
+#define WHITE 1
+#define BLACK 2
 
 static int init_board_content[] = {
 	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
@@ -23,10 +26,11 @@ static int init_board_content[] = {
 
 typedef struct board
 {
-	enum { white, black } color;
+	int color;
 	int tile[10][10];
 	int bridge[10][10];
-
+	int prohibit_tile[10][10];
+	int computed;
 
 } board;
 
@@ -34,6 +38,8 @@ int init_board(board* b) {
 	b->color = -1;
 	memcpy(b->tile, init_board_content, sizeof(init_board_content));
 	memcpy(b->bridge, init_board_content, sizeof(init_board_content));
+	memcpy(b->prohibit_tile, init_board_content, sizeof(init_board_content));
+	b->computed = 0;
 	return 0;
 }
 
@@ -56,7 +62,121 @@ int read_board(char* chess_location, char* bridge_location, board* b) {
 }
 
 int write_board(char* chess_location, char* bridge_location, board* b) {
+	FILE* c_file = fopen(chess_location, "w");
+	FILE* b_file = fopen(bridge_location, "w");
+	if (c_file == NULL || b_file == NULL) {
+		printf("open file failed\n");
+		return -1;
+	}
+	int i = 0;
+	for (i = 0; i < 10; i++) {
+		fprintf(c_file, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", b->tile[i][0], b->tile[i][1], b->tile[i][2], b->tile[i][3], b->tile[i][4], b->tile[i][5], b->tile[i][6], b->tile[i][7], b->tile[i][8], b->tile[i][9]);
+	}
+	for (i = 0; i < 10; i++) {
+		fprintf(b_file, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", b->bridge[i][0], b->bridge[i][1], b->bridge[i][2], b->bridge[i][3], b->bridge[i][4], b->bridge[i][5], b->bridge[i][6], b->bridge[i][7], b->bridge[i][8], b->bridge[i][9]);
+	}
+	return 0;
+}
 
+int count_surround_tile(int tile_board[10][10], int x, int y, int depth, int color, int searched[10][10]) {
+	
+	if (searched[x][y] == 1) {
+		return 0;
+	}
+	if (tile_board[x][y] == color) {
+		searched[x][y] = 1;
+		if (depth == 0) {
+			return 1;
+		}
+		int r = 1;
+		
+		if (x > 0) {
+			r += count_surround_tile(tile_board, x - 1, y, depth - 1, color, searched);
+		}
+		if (y > 0) {
+			r += count_surround_tile(tile_board, x, y - 1, depth - 1, color, searched);
+		}
+		if (x < 9) {
+			r += count_surround_tile(tile_board, x + 1, y, depth - 1, color, searched);
+		}
+		if (y < 9) {
+			r += count_surround_tile(tile_board, x, y + 1, depth - 1, color, searched);
+		}
+		
+		return r;
+	}
+	return 0;
+}
+
+int mark_prohibit(board* b) {
+	int tile_color_num, opposite_colot_num;
+	if (b->color == WHITE) {
+		tile_color_num = 1;
+		opposite_colot_num = 2;
+	}
+	else if (b->color == BLACK)
+	{
+		tile_color_num = 2;
+		opposite_colot_num = 1;
+	}
+	if (b->computed) return 0;
+	int finded[10][10];
+	memcpy(finded, init_board_content, sizeof(init_board_content));
+	int i, j;
+	for (int i = 0; i < 10; i++) {
+		for (int j = 0; j < 10; j++) {
+
+			// our color surround
+			if (b->tile[i][j] == tile_color_num) {
+				/*
+				if (i > 0 && b->tile[i - 1][j] == 0) {
+					b->prohibit_tile[i - 1][j] = 1;
+					finded[i - 1][j] = 1;
+				}
+				if (j > 0 && b->tile[i][j - 1] == 0) {
+					b->prohibit_tile[i][j - 1] = 1;
+					finded[i][j - 1] = 1;
+				}
+				if (i < 9 && b->tile[i + 1][j] == 0) {
+					b->prohibit_tile[i + 1][j] = 1;
+					finded[i + 1][j] = 1;
+				}
+				if (j < 9 && b->tile[i][j + 1] == 0) {
+					b->prohibit_tile[i][j + 1] = 1;
+					finded[i][j + 1] = 1;
+				}
+				*/
+
+				b->prohibit_tile[i][j] = 1;
+			}
+
+			// enemy color 
+			else if (b->tile[i][j] == opposite_colot_num)
+			{
+				b->prohibit_tile[i][j] = 1;
+				finded[i][j] = 1;
+			}
+			else {
+				if (finded[i][j] == -1) {
+					b->prohibit_tile[i][j] = 0;
+				}
+			}
+			finded[i][j] = 1;
+		}
+	}
+}
+
+int next_move(board* b, int next_tile[NEXTMOVENUM][10][10], int next_bridge[NEXTMOVENUM][10][10]) {
+	int i = 0;
+	for (i = 0; i < NEXTMOVENUM; i++) {
+		memcpy(next_tile[i], init_board_content, sizeof(init_board_content));
+		memcpy(next_bridge[i], init_board_content, sizeof(init_board_content));
+
+	}
+
+
+
+	return -1;
 }
 
 void print_board(board* b) {
@@ -92,7 +212,15 @@ int test() {
 	init_board(&a);
 	print_board(&a);
 	read_board("chess.txt", "bridge.txt", &a);
-	// print_board(&a);
+	print_board(&a);
+
+	int searched[10][10] = {0};
+	int r=count_surround_tile(a.tile, 2, 2, 3, BLACK, searched);
+	printf("check_island = %d\n", r);
+	int i = 0;
+	for (i = 0; i < 10; i++) {
+		printf("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", searched[i][0], searched[i][1], searched[i][2], searched[i][3], searched[i][4], searched[i][5], searched[i][6], searched[i][7], searched[i][8], searched[i][9]);
+	}
 }
 
 int main(int argc, char* argv[])
@@ -100,7 +228,7 @@ int main(int argc, char* argv[])
 	test();
 	printf("Hello world!\n");
 	board a = {
-		black,
+		BLACK,
 		{0},
 		{0},
 	};
