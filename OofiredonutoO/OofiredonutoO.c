@@ -30,7 +30,9 @@ typedef struct board
 	int tile[10][10];
 	int bridge[10][10];
 	int prohibit_tile[10][10];
-	int computed;
+	int connected_tile[10][10];
+	int computed_prohibit;
+	int computed_connected;
 
 } board;
 
@@ -39,7 +41,8 @@ int init_board(board* b) {
 	memcpy(b->tile, init_board_content, sizeof(init_board_content));
 	memcpy(b->bridge, init_board_content, sizeof(init_board_content));
 	memcpy(b->prohibit_tile, init_board_content, sizeof(init_board_content));
-	b->computed = 0;
+	b->computed_prohibit = 0;
+	b->computed_connected = 0;
 	return 0;
 }
 
@@ -79,7 +82,7 @@ int write_board(char* chess_location, char* bridge_location, board* b) {
 }
 
 int count_surround_tile(int tile_board[10][10], int x, int y, int depth, int color, int searched[10][10]) {
-	
+
 	if (searched[x][y] == 1) {
 		return 0;
 	}
@@ -89,7 +92,7 @@ int count_surround_tile(int tile_board[10][10], int x, int y, int depth, int col
 			return 1;
 		}
 		int r = 1;
-		
+
 		if (x > 0) {
 			r += count_surround_tile(tile_board, x - 1, y, depth - 1, color, searched);
 		}
@@ -102,9 +105,30 @@ int count_surround_tile(int tile_board[10][10], int x, int y, int depth, int col
 		if (y < 9) {
 			r += count_surround_tile(tile_board, x, y + 1, depth - 1, color, searched);
 		}
-		
+
 		return r;
 	}
+	return 0;
+}
+
+int count_all_connect_tile(board* b) {
+	int i, j, tile_color_num = -1;
+	if (b->color == WHITE) {
+		tile_color_num = 1;
+
+	}
+	else if (b->color == BLACK)
+	{
+		tile_color_num = 2;
+
+	}
+	for (int i = 0; i < 10; i++) {
+		for (int j = 0; j < 10; j++) {
+			int search[10][10] = { 0 };
+			b->connected_tile[i][j] = count_surround_tile(b->tile, i, j, 3, tile_color_num, search);
+		}
+	}
+	b->computed_connected = 1;
 	return 0;
 }
 
@@ -119,7 +143,7 @@ int mark_prohibit(board* b) {
 		tile_color_num = 2;
 		opposite_colot_num = 1;
 	}
-	if (b->computed) return 0;
+	if (b->computed_prohibit) return 0;
 	int finded[10][10];
 	memcpy(finded, init_board_content, sizeof(init_board_content));
 	int i, j;
@@ -213,14 +237,17 @@ int test() {
 	print_board(&a);
 	read_board("chess.txt", "bridge.txt", &a);
 	print_board(&a);
+	a.color = BLACK;
 
-	int searched[10][10] = {0};
-	int r=count_surround_tile(a.tile, 2, 2, 3, BLACK, searched);
+	int searched[10][10] = { 0 };
+	int r = count_surround_tile(a.tile, 2, 2, 3, BLACK, searched);
 	printf("check_island = %d\n", r);
 	int i = 0;
 	for (i = 0; i < 10; i++) {
 		printf("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", searched[i][0], searched[i][1], searched[i][2], searched[i][3], searched[i][4], searched[i][5], searched[i][6], searched[i][7], searched[i][8], searched[i][9]);
 	}
+	count_all_connect_tile(&a);
+	printf("count donw\n");
 }
 
 int main(int argc, char* argv[])
