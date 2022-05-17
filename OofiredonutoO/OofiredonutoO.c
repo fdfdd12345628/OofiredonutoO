@@ -315,7 +315,7 @@ int straight_bridge(int bridge[10][10], int start[2], int end[2]) {
 				printf("y: %d, x: %d\n", i, j);
 			}
 		}
-		}
+	}
 	/*
 	find place
 
@@ -333,7 +333,7 @@ int straight_bridge(int bridge[10][10], int start[2], int end[2]) {
 				int y1 = y_center - 1;
 				int y2 = y_center + 1;
 				if (x1 >= 0 && x1 <= 9 && x2 >= 0 && x2 <= 9 && y1 >= 0 && y1 <= 9 && y2 >= 0 && y2 <= 9) {
-					if (bridge[y1][x1]!=0 && (bridge[y1][x1] == bridge[y2][x2])) {
+					if (bridge[y1][x1] != 0 && (bridge[y1][x1] == bridge[y2][x2])) {
 						return 0;
 					}
 				}
@@ -384,8 +384,8 @@ int L_bridge(int bridge[10][10], int start[2], int end[2]) {
 		for (i = 0; i < 2; i++) {
 			for (j < 0; j < 2; j++) {
 				int bias = is_slash ? -1 : 1;
-				int x1 = up_point[1] +(1+i)*bias;
-				int x2 = down_point[1] + (1 + j)*bias;
+				int x1 = up_point[1] + (1 + i) * bias;
+				int x2 = down_point[1] + (1 + j) * bias;
 				int y1 = up_point[0];
 				int y2 = down_point[0];
 				if (x1 >= 0 && x1 <= 9 && x2 >= 0 && x2 <= 9 && y1 >= 0 && y1 <= 9 && y2 >= 0 && y2 <= 9) {
@@ -402,8 +402,8 @@ int L_bridge(int bridge[10][10], int start[2], int end[2]) {
 				int bias = is_slash ? -1 : 1;
 				int x1 = up_point[1];// + (1 + i) * bias;
 				int x2 = down_point[1];// + (1 + j) * bias;
-				int y1 = up_point[0]+(1+i)*bias;
-				int y2 = down_point[0]+(1+j)*bias;
+				int y1 = up_point[0] + (1 + i) * bias;
+				int y2 = down_point[0] + (1 + j) * bias;
 				if (x1 >= 0 && x1 <= 9 && x2 >= 0 && x2 <= 9 && y1 >= 0 && y1 <= 9 && y2 >= 0 && y2 <= 9) {
 					if (bridge[y1][x1] != 0 && (bridge[y1][x1] == bridge[y2][x2])) {
 						return 0;
@@ -563,7 +563,7 @@ int test() {
 	mark_prohibit_tile(&a);
 	int t[2] = { 0,2 };
 	int t2[2] = { 2,2 };
-	int r=straight_bridge(a.bridge, t, t2);
+	int r = straight_bridge(a.bridge, t, t2);
 
 	printf("count donw\n");
 	print_board(&a);
