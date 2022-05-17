@@ -31,7 +31,7 @@ typedef struct board
 	int bridge[10][10];
 	int prohibit_tile[10][10];
 	int connected_tile[10][10];
-	int computed_prohibit;
+	int computed_prohibit_tile;
 	int computed_connected;
 
 } board;
@@ -42,7 +42,7 @@ int init_board(board* b) {
 	memcpy(b->bridge, init_board_content, sizeof(init_board_content));
 	memcpy(b->prohibit_tile, init_board_content, sizeof(init_board_content));
 	memcpy(b->connected_tile, init_board_content, sizeof(init_board_content));
-	b->computed_prohibit = 0;
+	b->computed_prohibit_tile = 0;
 	b->computed_connected = 0;
 	return 0;
 }
@@ -127,7 +127,7 @@ int count_all_connect_tile(board* b) {
 		for (j = 0; j < 10; j++) {
 			int search[10][10] = { 0 };
 			b->connected_tile[i][j] = count_surround_tile(b->tile, i, j, 3, tile_color_num, search);
-			
+
 		}
 		printf("");
 	}
@@ -135,7 +135,15 @@ int count_all_connect_tile(board* b) {
 	return 0;
 }
 
-int mark_prohibit_by_tile(board* b) {
+int mark_prohibit_tile(board* b) {
+	if (b->computed_prohibit_tile) return 0;
+	mark_prohibit_tile_by_tile(b);
+	mark_prohibit_tile_by_bridge(b);
+	b->computed_prohibit_tile = 1;
+	return 0;
+}
+
+int mark_prohibit_tile_by_tile(board* b) {
 	int tile_color_num, opposite_colot_num;
 	if (b->color == WHITE) {
 		tile_color_num = WHITE;
@@ -146,9 +154,9 @@ int mark_prohibit_by_tile(board* b) {
 		tile_color_num = BLACK;
 		opposite_colot_num = WHITE;
 	}
-	if (b->computed_prohibit) return 0;
-	if (!b->computed_connected) { 
-		count_all_connect_tile(b); 
+
+	if (!b->computed_connected) {
+		count_all_connect_tile(b);
 	}
 	int finded[10][10];
 	memcpy(finded, init_board_content, sizeof(init_board_content));
@@ -159,33 +167,33 @@ int mark_prohibit_by_tile(board* b) {
 			// our color surround
 			if (b->tile[i][j] == tile_color_num) {
 				if (b->connected_tile[i][j] == 4) {
-					
+
 					if (i > 0 && b->tile[i - 1][j] == 0) {
 						b->prohibit_tile[i - 1][j] = 1;
 						finded[i - 1][j] = 1;
-						if (j > 0 && b->tile[i-1][j - 1] == 0) {
-							b->prohibit_tile[i-1][j - 1] = 1;
-							finded[i-1][j - 1] = 1;
+						if (j > 0 && b->tile[i - 1][j - 1] == 0) {
+							b->prohibit_tile[i - 1][j - 1] = 1;
+							finded[i - 1][j - 1] = 1;
 						}
-						if (j < 9 && b->tile[i-1][j + 1] == 0) {
-							b->prohibit_tile[i-1][j + 1] = 1;
-							finded[i-1][j + 1] = 1;
+						if (j < 9 && b->tile[i - 1][j + 1] == 0) {
+							b->prohibit_tile[i - 1][j + 1] = 1;
+							finded[i - 1][j + 1] = 1;
 						}
 					}
 					if (j > 0 && b->tile[i][j - 1] == 0) {
 						b->prohibit_tile[i][j - 1] = 1;
 						finded[i][j - 1] = 1;
-						
+
 					}
 					if (i < 9 && b->tile[i + 1][j] == 0) {
 						b->prohibit_tile[i + 1][j] = 1;
 						finded[i + 1][j] = 1;
-						if (j > 0 && b->tile[i+1][j - 1] == 0) {
-							b->prohibit_tile[i+1][j - 1] = 1;
+						if (j > 0 && b->tile[i + 1][j - 1] == 0) {
+							b->prohibit_tile[i + 1][j - 1] = 1;
 							finded[i + 1][j - 1] = 1;
 						}
-						if (j < 9 && b->tile[i+1][j + 1] == 0) {
-							b->prohibit_tile[i+1][j + 1] = 1;
+						if (j < 9 && b->tile[i + 1][j + 1] == 0) {
+							b->prohibit_tile[i + 1][j + 1] = 1;
 							finded[i + 1][j + 1] = 1;
 						}
 					}
@@ -193,7 +201,7 @@ int mark_prohibit_by_tile(board* b) {
 						b->prohibit_tile[i][j + 1] = 1;
 						finded[i][j + 1] = 1;
 					}
-					
+
 				}
 
 				b->prohibit_tile[i][j] = 1;
@@ -213,10 +221,82 @@ int mark_prohibit_by_tile(board* b) {
 			finded[i][j] = 1;
 		}
 	}
+	return 0;
 }
 
-int mark_prohibit_by_bridge(board* b) {
+int mark_prohibit_tile_by_bridge(board* b) {
+	int used_bridge[51];
+	int i, j;
+	memcpy(used_bridge, init_board_content, sizeof(used_bridge));
 
+	for (i = 0; i < 10; i++) {
+		for (j = 0; j < 10; j++) {
+			if (b->bridge[i][j] != 0) {
+				int bridge_num = b->bridge[i][j];
+				if (used_bridge[bridge_num] == -1) {
+					if (i > 1 && b->bridge[i - 2][j] == bridge_num) {
+						b->prohibit_tile[i - 1][j] = 1;
+					}
+					else if (i > 1 && j > 0 && b->bridge[i - 2][j - 1] == bridge_num) {
+						b->prohibit_tile[i - 1][j] = 1;
+						b->prohibit_tile[i - 1][j - 1] = 1;
+					}
+					else if (i > 1 && j > 1 && b->bridge[i - 2][j - 2] == bridge_num) {
+						b->prohibit_tile[i - 1][j - 1] = 1;
+					}
+					else if (i > 0 && j > 1 && b->bridge[i - 1][j - 2] == bridge_num) {
+						b->prohibit_tile[i - 1][j - 1] = 1;
+						b->prohibit_tile[i][j - 1] = 1;
+					}
+					else if (j > 1 && b->bridge[i][j - 2] == bridge_num) {
+						b->prohibit_tile[i][j - 1] = 1;
+					}
+					else if (i < 9 && j > 1 && b->bridge[i + 1][j - 2] == bridge_num) {
+						b->prohibit_tile[i + 1][j - 1] = 1;
+						b->prohibit_tile[i][j - 1] = 1;
+					}
+					else if (i < 8 && j > 1 && b->bridge[i + 2][j - 2] == bridge_num) {
+						b->prohibit_tile[i + 1][j - 1] = 1;
+					}
+					else if (i < 8 && j > 0 && b->bridge[i + 2][j - 1] == bridge_num) {
+						b->prohibit_tile[i + 1][j - 1] = 1;
+						b->prohibit_tile[i + 1][j] = 1;
+					}
+					else if (i < 8 && b->bridge[i + 2][j] == bridge_num) {
+						b->prohibit_tile[i + 1][j] = 1;
+					}
+					else if (i < 8 && j < 9 && b->bridge[i + 2][j + 1] == bridge_num) {
+						b->prohibit_tile[i + 1][j] = 1;
+						b->prohibit_tile[i + 1][j + 1] = 1;
+					}
+					else if (i < 8 && j < 8 && b->bridge[i + 2][j + 2] == bridge_num) {
+						b->prohibit_tile[i + 1][j + 1] = 1;
+					}
+					else if (i < 9 && j < 8 && b->bridge[i + 1][j + 2] == bridge_num) {
+						b->prohibit_tile[i + 1][j + 1] = 1;
+						b->prohibit_tile[i][j + 1] = 1;
+					}
+					else if (j < 8 && b->bridge[i][j + 2] == bridge_num) {
+						b->prohibit_tile[i][j + 1] = 1;
+
+					}
+					else if (i > 0 && j < 8 && b->bridge[i - 1][j + 2] == bridge_num) {
+						b->prohibit_tile[i][j + 1] = 1;
+						b->prohibit_tile[i - 1][j + 1] = 1;
+					}
+					else if (i > 1 && j < 8 && b->bridge[i - 2][j + 2] == bridge_num) {
+						b->prohibit_tile[i - 1][j + 1] = 1;
+
+					}
+					else if (i > 1 && j < 9 && b->bridge[i - 2][j + 1] == bridge_num) {
+						b->prohibit_tile[i - 1][j + 1] = 1;
+						b->prohibit_tile[i - 1][j] = 1;
+					}
+					used_bridge[bridge_num] = 1;
+				}
+			}
+		}
+	}
 }
 
 int next_move(board* b, int next_tile[NEXTMOVENUM][10][10], int next_bridge[NEXTMOVENUM][10][10]) {
@@ -275,12 +355,14 @@ int test() {
 	for (i = 0; i < 10; i++) {
 		printf("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", searched[i][0], searched[i][1], searched[i][2], searched[i][3], searched[i][4], searched[i][5], searched[i][6], searched[i][7], searched[i][8], searched[i][9]);
 	}
-	
+
 	count_all_connect_tile(&a);
 	*/
-	mark_prohibit_by_tile(&a);
+	//mark_prohibit_by_tile(&a);
+	mark_prohibit_tile(&a);
 	printf("count donw\n");
 	print_board(&a);
+	return 0;
 }
 
 int main(int argc, char* argv[])
@@ -303,13 +385,3 @@ int main(int argc, char* argv[])
 
 }
 
-// 執行程式: Ctrl + F5 或 [偵錯] > [啟動但不偵錯] 功能表
-// 偵錯程式: F5 或 [偵錯] > [啟動偵錯] 功能表
-
-// 開始使用的提示: 
-//   1. 使用 [方案總管] 視窗，新增/管理檔案
-//   2. 使用 [Team Explorer] 視窗，連線到原始檔控制
-//   3. 使用 [輸出] 視窗，參閱組建輸出與其他訊息
-//   4. 使用 [錯誤清單] 視窗，檢視錯誤
-//   5. 前往 [專案] > [新增項目]，建立新的程式碼檔案，或是前往 [專案] > [新增現有項目]，將現有程式碼檔案新增至專案
-//   6. 之後要再次開啟此專案時，請前往 [檔案] > [開啟] > [專案]，然後選取 .sln 檔案
