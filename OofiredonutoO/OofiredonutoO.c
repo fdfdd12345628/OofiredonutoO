@@ -41,6 +41,7 @@ int init_board(board* b) {
 	memcpy(b->tile, init_board_content, sizeof(init_board_content));
 	memcpy(b->bridge, init_board_content, sizeof(init_board_content));
 	memcpy(b->prohibit_tile, init_board_content, sizeof(init_board_content));
+	memcpy(b->connected_tile, init_board_content, sizeof(init_board_content));
 	b->computed_prohibit = 0;
 	b->computed_connected = 0;
 	return 0;
@@ -114,62 +115,86 @@ int count_surround_tile(int tile_board[10][10], int x, int y, int depth, int col
 int count_all_connect_tile(board* b) {
 	int i, j, tile_color_num = -1;
 	if (b->color == WHITE) {
-		tile_color_num = 1;
+		tile_color_num = WHITE;
 
 	}
 	else if (b->color == BLACK)
 	{
-		tile_color_num = 2;
+		tile_color_num = BLACK;
 
 	}
-	for (int i = 0; i < 10; i++) {
-		for (int j = 0; j < 10; j++) {
+	for (i = 0; i < 10; i++) {
+		for (j = 0; j < 10; j++) {
 			int search[10][10] = { 0 };
 			b->connected_tile[i][j] = count_surround_tile(b->tile, i, j, 3, tile_color_num, search);
+			
 		}
+		printf("");
 	}
 	b->computed_connected = 1;
 	return 0;
 }
 
-int mark_prohibit(board* b) {
+int mark_prohibit_by_tile(board* b) {
 	int tile_color_num, opposite_colot_num;
 	if (b->color == WHITE) {
-		tile_color_num = 1;
-		opposite_colot_num = 2;
+		tile_color_num = WHITE;
+		opposite_colot_num = BLACK;
 	}
 	else if (b->color == BLACK)
 	{
-		tile_color_num = 2;
-		opposite_colot_num = 1;
+		tile_color_num = BLACK;
+		opposite_colot_num = WHITE;
 	}
 	if (b->computed_prohibit) return 0;
+	if (!b->computed_connected) { 
+		count_all_connect_tile(b); 
+	}
 	int finded[10][10];
 	memcpy(finded, init_board_content, sizeof(init_board_content));
 	int i, j;
-	for (int i = 0; i < 10; i++) {
-		for (int j = 0; j < 10; j++) {
+	for (i = 0; i < 10; i++) {
+		for (j = 0; j < 10; j++) {
 
 			// our color surround
 			if (b->tile[i][j] == tile_color_num) {
-				/*
-				if (i > 0 && b->tile[i - 1][j] == 0) {
-					b->prohibit_tile[i - 1][j] = 1;
-					finded[i - 1][j] = 1;
+				if (b->connected_tile[i][j] == 4) {
+					
+					if (i > 0 && b->tile[i - 1][j] == 0) {
+						b->prohibit_tile[i - 1][j] = 1;
+						finded[i - 1][j] = 1;
+						if (j > 0 && b->tile[i-1][j - 1] == 0) {
+							b->prohibit_tile[i-1][j - 1] = 1;
+							finded[i-1][j - 1] = 1;
+						}
+						if (j < 9 && b->tile[i-1][j + 1] == 0) {
+							b->prohibit_tile[i-1][j + 1] = 1;
+							finded[i-1][j + 1] = 1;
+						}
+					}
+					if (j > 0 && b->tile[i][j - 1] == 0) {
+						b->prohibit_tile[i][j - 1] = 1;
+						finded[i][j - 1] = 1;
+						
+					}
+					if (i < 9 && b->tile[i + 1][j] == 0) {
+						b->prohibit_tile[i + 1][j] = 1;
+						finded[i + 1][j] = 1;
+						if (j > 0 && b->tile[i+1][j - 1] == 0) {
+							b->prohibit_tile[i+1][j - 1] = 1;
+							finded[i + 1][j - 1] = 1;
+						}
+						if (j < 9 && b->tile[i+1][j + 1] == 0) {
+							b->prohibit_tile[i+1][j + 1] = 1;
+							finded[i + 1][j + 1] = 1;
+						}
+					}
+					if (j < 9 && b->tile[i][j + 1] == 0) {
+						b->prohibit_tile[i][j + 1] = 1;
+						finded[i][j + 1] = 1;
+					}
+					
 				}
-				if (j > 0 && b->tile[i][j - 1] == 0) {
-					b->prohibit_tile[i][j - 1] = 1;
-					finded[i][j - 1] = 1;
-				}
-				if (i < 9 && b->tile[i + 1][j] == 0) {
-					b->prohibit_tile[i + 1][j] = 1;
-					finded[i + 1][j] = 1;
-				}
-				if (j < 9 && b->tile[i][j + 1] == 0) {
-					b->prohibit_tile[i][j + 1] = 1;
-					finded[i][j + 1] = 1;
-				}
-				*/
 
 				b->prohibit_tile[i][j] = 1;
 			}
@@ -188,6 +213,10 @@ int mark_prohibit(board* b) {
 			finded[i][j] = 1;
 		}
 	}
+}
+
+int mark_prohibit_by_bridge(board* b) {
+
 }
 
 int next_move(board* b, int next_tile[NEXTMOVENUM][10][10], int next_bridge[NEXTMOVENUM][10][10]) {
@@ -239,15 +268,19 @@ int test() {
 	print_board(&a);
 	a.color = BLACK;
 
-	int searched[10][10] = { 0 };
+	/*int searched[10][10] = {0};
 	int r = count_surround_tile(a.tile, 2, 2, 3, BLACK, searched);
 	printf("check_island = %d\n", r);
 	int i = 0;
 	for (i = 0; i < 10; i++) {
 		printf("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", searched[i][0], searched[i][1], searched[i][2], searched[i][3], searched[i][4], searched[i][5], searched[i][6], searched[i][7], searched[i][8], searched[i][9]);
 	}
+	
 	count_all_connect_tile(&a);
+	*/
+	mark_prohibit_by_tile(&a);
 	printf("count donw\n");
+	print_board(&a);
 }
 
 int main(int argc, char* argv[])
