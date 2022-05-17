@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #define DEPTH 8
 #define INF 0x7FFFFFFF
@@ -303,8 +304,8 @@ int mark_prohibit_tile_by_bridge(board* b) {
 // exclude cross bridge of a straight bridge
 int straight_bridge(int bridge[10][10], int start[2], int end[2]) {
 	// if can place return 1, else reture 0
-	int x_diff = start[0] - end[0];
-	int y_diff = start[1] - end[1];
+	int y_diff = start[0] - end[0];
+	int x_diff = start[1] - end[1];
 	int y_center = (start[0] + end[0]) / 2;
 	int x_center = (start[1] + end[1]) / 2;
 	int i, j;
@@ -357,8 +358,61 @@ int straight_bridge(int bridge[10][10], int start[2], int end[2]) {
 
 int L_bridge(int bridge[10][10], int start[2], int end[2]) {
 	// if can place return 1, else reture 0
-	int x_diff = start[0] - end[0];
-	int y_diff = start[1] - end[1];
+	int x_diff = start[1] - end[1];
+	int y_diff = start[0] - end[0];
+	int is_vertical = abs(x_diff) > abs(y_diff) ? 0 : 1;
+	int up_point[2];
+	int down_point[2];
+	int i, j;
+	if (start[0] > end[0]) {
+		memcpy(up_point, start, sizeof(up_point));
+		memcpy(down_point, end, sizeof(down_point));
+	}
+	else {
+		memcpy(up_point, end, sizeof(up_point));
+		memcpy(down_point, start, sizeof(down_point));
+	}
+	int is_slash = -1;
+	if (up_point[1] > down_point[1]) {
+		is_slash = 1;
+	}
+	else
+	{
+		is_slash = 0;
+	}
+	if (is_vertical) {
+		for (i = 0; i < 2; i++) {
+			for (j < 0; j < 2; j++) {
+				int bias = is_slash ? -1 : 1;
+				int x1 = up_point[1] +(1+i)*bias;
+				int x2 = down_point[1] + (1 + j)*bias;
+				int y1 = up_point[0];
+				int y2 = down_point[0];
+				if (x1 >= 0 && x1 <= 9 && x2 >= 0 && x2 <= 9 && y1 >= 0 && y1 <= 9 && y2 >= 0 && y2 <= 9) {
+					if (bridge[y1][x1] != 0 && (bridge[y1][x1] == bridge[y2][x2])) {
+						return 0;
+					}
+				}
+			}
+		}
+	}
+	else {
+		for (i = 0; i < 2; i++) {
+			for (j < 0; j < 2; j++) {
+				int bias = is_slash ? -1 : 1;
+				int x1 = up_point[1];// + (1 + i) * bias;
+				int x2 = down_point[1];// + (1 + j) * bias;
+				int y1 = up_point[0]+(1+i)*bias;
+				int y2 = down_point[0]+(1+j)*bias;
+				if (x1 >= 0 && x1 <= 9 && x2 >= 0 && x2 <= 9 && y1 >= 0 && y1 <= 9 && y2 >= 0 && y2 <= 9) {
+					if (bridge[y1][x1] != 0 && (bridge[y1][x1] == bridge[y2][x2])) {
+						return 0;
+					}
+				}
+			}
+		}
+	}
+
 }
 
 int cross_bridge(int bridge[10][10], int start[2], int end[2]) {
@@ -507,9 +561,10 @@ int test() {
 	*/
 	//mark_prohibit_by_tile(&a);
 	mark_prohibit_tile(&a);
-	int t[2] = { 0,1 };
-	int t2[2] = { 2,3 };
+	int t[2] = { 0,2 };
+	int t2[2] = { 2,2 };
 	int r=straight_bridge(a.bridge, t, t2);
+
 	printf("count donw\n");
 	print_board(&a);
 	return 0;
