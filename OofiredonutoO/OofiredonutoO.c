@@ -10,6 +10,7 @@
 #define NEXTMOVENUM 100
 #define WHITE 1
 #define BLACK 2
+#define NEXTBRIDGENUM 100
 
 static int init_board_content[] = {
 	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
@@ -299,6 +300,152 @@ int mark_prohibit_tile_by_bridge(board* b) {
 	}
 }
 
+// exclude cross bridge of a straight bridge
+int straight_bridge(int bridge[10][10], int start[2], int end[2]) {
+	// if can place return 1, else reture 0
+	int x_diff = start[0] - end[0];
+	int y_diff = start[1] - end[1];
+	int y_center = (start[0] + end[0]) / 2;
+	int x_center = (start[1] + end[1]) / 2;
+	int i, j;
+	for (i = 0; i < 10; i++) {
+		for (j = 0; j < 9; j++) {
+			if (bridge[i][j] == 1) {
+				printf("y: %d, x: %d\n", i, j);
+			}
+		}
+		}
+	/*
+	find place
+
+	@ @ @
+	b 0 b
+	@ @ @
+
+	*/
+	for (i = 0; i < 3; i++) {
+		int exist_brdige_num = { 0 };
+		for (j = 0; j < 3; j++) {
+			if (x_diff) {
+				int x1 = x_center - 1 + i;
+				int x2 = x_center - 1 + j;
+				int y1 = y_center - 1;
+				int y2 = y_center + 1;
+				if (x1 >= 0 && x1 <= 9 && x2 >= 0 && x2 <= 9 && y1 >= 0 && y1 <= 9 && y2 >= 0 && y2 <= 9) {
+					if (bridge[y1][x1]!=0 && (bridge[y1][x1] == bridge[y2][x2])) {
+						return 0;
+					}
+				}
+			}
+			else if (y_diff)
+			{
+				int x1 = x_center - 1;
+				int x2 = x_center + 1;
+				int y1 = y_center - 1 + i;
+				int y2 = y_center - 1 + j;
+				if (x1 >= 0 && x1 <= 9 && x2 >= 0 && x2 <= 9 && y1 >= 0 && y1 <= 9 && y2 >= 0 && y2 <= 9) {
+					printf("%d %d\n", bridge[x1][y1], bridge[x2][y2]);
+					if (bridge[y1][x1] != 0 && (bridge[y1][x1] == bridge[y2][x2])) {
+						return 0;
+					}
+				}
+			}
+		}
+	}
+	return 1;
+}
+
+int L_bridge(int bridge[10][10], int start[2], int end[2]) {
+	// if can place return 1, else reture 0
+	int x_diff = start[0] - end[0];
+	int y_diff = start[1] - end[1];
+}
+
+int cross_bridge(int bridge[10][10], int start[2], int end[2]) {
+	// if can place return 1, else reture 0
+	int x_diff = start[0] - end[0];
+	int y_diff = start[1] - end[1];
+}
+
+int next_bridge(board* b, int next_bridge[NEXTBRIDGENUM][2]) {
+	int i, j;
+	int tile_color_num;
+	if (b->color == WHITE) {
+		tile_color_num = WHITE;
+	}
+	else if (b->color == BLACK)
+	{
+		tile_color_num = BLACK;
+	}
+	for (i = 0; i < 10; i++) {
+		for (j = 0; j < 10; j++) {
+			if (b->bridge[i][j] == 0 && b->tile[i][j] == tile_color_num) {
+				int bridge_num = b->bridge[i][j];
+
+				if (i > 1 && b->bridge[i - 2][j] == bridge_num) {
+					b->prohibit_tile[i - 1][j] = 1;
+				}
+				else if (i > 1 && j > 0 && b->bridge[i - 2][j - 1] == bridge_num) {
+					b->prohibit_tile[i - 1][j] = 1;
+					b->prohibit_tile[i - 1][j - 1] = 1;
+				}
+				else if (i > 1 && j > 1 && b->bridge[i - 2][j - 2] == bridge_num) {
+					b->prohibit_tile[i - 1][j - 1] = 1;
+				}
+				else if (i > 0 && j > 1 && b->bridge[i - 1][j - 2] == bridge_num) {
+					b->prohibit_tile[i - 1][j - 1] = 1;
+					b->prohibit_tile[i][j - 1] = 1;
+				}
+				else if (j > 1 && b->bridge[i][j - 2] == bridge_num) {
+					b->prohibit_tile[i][j - 1] = 1;
+				}
+				else if (i < 9 && j > 1 && b->bridge[i + 1][j - 2] == bridge_num) {
+					b->prohibit_tile[i + 1][j - 1] = 1;
+					b->prohibit_tile[i][j - 1] = 1;
+				}
+				else if (i < 8 && j > 1 && b->bridge[i + 2][j - 2] == bridge_num) {
+					b->prohibit_tile[i + 1][j - 1] = 1;
+				}
+				else if (i < 8 && j > 0 && b->bridge[i + 2][j - 1] == bridge_num) {
+					b->prohibit_tile[i + 1][j - 1] = 1;
+					b->prohibit_tile[i + 1][j] = 1;
+				}
+				else if (i < 8 && b->bridge[i + 2][j] == bridge_num) {
+					b->prohibit_tile[i + 1][j] = 1;
+				}
+				else if (i < 8 && j < 9 && b->bridge[i + 2][j + 1] == bridge_num) {
+					b->prohibit_tile[i + 1][j] = 1;
+					b->prohibit_tile[i + 1][j + 1] = 1;
+				}
+				else if (i < 8 && j < 8 && b->bridge[i + 2][j + 2] == bridge_num) {
+					b->prohibit_tile[i + 1][j + 1] = 1;
+				}
+				else if (i < 9 && j < 8 && b->bridge[i + 1][j + 2] == bridge_num) {
+					b->prohibit_tile[i + 1][j + 1] = 1;
+					b->prohibit_tile[i][j + 1] = 1;
+				}
+				else if (j < 8 && b->bridge[i][j + 2] == bridge_num) {
+					b->prohibit_tile[i][j + 1] = 1;
+
+				}
+				else if (i > 0 && j < 8 && b->bridge[i - 1][j + 2] == bridge_num) {
+					b->prohibit_tile[i][j + 1] = 1;
+					b->prohibit_tile[i - 1][j + 1] = 1;
+				}
+				else if (i > 1 && j < 8 && b->bridge[i - 2][j + 2] == bridge_num) {
+					b->prohibit_tile[i - 1][j + 1] = 1;
+
+				}
+				else if (i > 1 && j < 9 && b->bridge[i - 2][j + 1] == bridge_num) {
+					b->prohibit_tile[i - 1][j + 1] = 1;
+					b->prohibit_tile[i - 1][j] = 1;
+				}
+
+			}
+		}
+	}
+}
+
 int next_move(board* b, int next_tile[NEXTMOVENUM][10][10], int next_bridge[NEXTMOVENUM][10][10]) {
 	int i = 0;
 	for (i = 0; i < NEXTMOVENUM; i++) {
@@ -360,6 +507,9 @@ int test() {
 	*/
 	//mark_prohibit_by_tile(&a);
 	mark_prohibit_tile(&a);
+	int t[2] = { 0,1 };
+	int t2[2] = { 2,3 };
+	int r=straight_bridge(a.bridge, t, t2);
 	printf("count donw\n");
 	print_board(&a);
 	return 0;
