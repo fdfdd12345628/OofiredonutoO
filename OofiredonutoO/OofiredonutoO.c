@@ -364,7 +364,7 @@ int L_bridge(int bridge[10][10], int start[2], int end[2]) {
 	int up_point[2];
 	int down_point[2];
 	int i, j;
-	if (start[0] > end[0]) {
+	if (start[0] < end[0]) {
 		memcpy(up_point, start, sizeof(up_point));
 		memcpy(down_point, end, sizeof(down_point));
 	}
@@ -380,12 +380,13 @@ int L_bridge(int bridge[10][10], int start[2], int end[2]) {
 	{
 		is_slash = 0;
 	}
+	int bias = is_slash ? -1 : 1;
 	if (is_vertical) {
 		for (i = 0; i < 2; i++) {
-			for (j < 0; j < 2; j++) {
-				int bias = is_slash ? -1 : 1;
+			for (j = 0; j < 2; j++) {
+				//int bias = is_slash ? -1 : 1;
 				int x1 = up_point[1] + (1 + i) * bias;
-				int x2 = down_point[1] + (1 + j) * bias;
+				int x2 = down_point[1] - (1 + j) * bias;
 				int y1 = up_point[0];
 				int y2 = down_point[0];
 				if (x1 >= 0 && x1 <= 9 && x2 >= 0 && x2 <= 9 && y1 >= 0 && y1 <= 9 && y2 >= 0 && y2 <= 9) {
@@ -398,11 +399,11 @@ int L_bridge(int bridge[10][10], int start[2], int end[2]) {
 	}
 	else {
 		for (i = 0; i < 2; i++) {
-			for (j < 0; j < 2; j++) {
-				int bias = is_slash ? -1 : 1;
+			for (j = 0; j < 2; j++) {
+				//int bias = is_slash ? -1 : 1;
 				int x1 = up_point[1];// + (1 + i) * bias;
 				int x2 = down_point[1];// + (1 + j) * bias;
-				int y1 = up_point[0] + (1 + i) * bias;
+				int y1 = up_point[0] - (1 + i) * bias;
 				int y2 = down_point[0] + (1 + j) * bias;
 				if (x1 >= 0 && x1 <= 9 && x2 >= 0 && x2 <= 9 && y1 >= 0 && y1 <= 9 && y2 >= 0 && y2 <= 9) {
 					if (bridge[y1][x1] != 0 && (bridge[y1][x1] == bridge[y2][x2])) {
@@ -412,13 +413,85 @@ int L_bridge(int bridge[10][10], int start[2], int end[2]) {
 			}
 		}
 	}
+	return 1;
 
 }
 
 int cross_bridge(int bridge[10][10], int start[2], int end[2]) {
 	// if can place return 1, else reture 0
-	int x_diff = start[0] - end[0];
-	int y_diff = start[1] - end[1];
+	int x_diff = start[1] - end[1];
+	int y_diff = start[0] - end[0];
+	int up_point[2];
+	int down_point[2];
+	if (start[0] < end[0]) {
+		memcpy(up_point, start, sizeof(up_point));
+		memcpy(down_point, end, sizeof(down_point));
+	}
+	else {
+		memcpy(up_point, end, sizeof(up_point));
+		memcpy(down_point, start, sizeof(down_point));
+	}
+	int is_slash = -1;
+	if (up_point[1] > down_point[1]) {
+		is_slash = 1;
+	}
+	else
+	{
+		is_slash = 0;
+	}
+	int upper_place[5][2] = { 0 };
+	int down_place[5][2] = { 0 };
+	generate_cross_check_place(up_point, is_slash, upper_place, down_place);
+	int i, j;
+	for (i = 0; i < 5; i++) {
+		for (j = 0; j < 5; j++) {
+			int x1 = upper_place[i][1];
+			int x2 = down_place[j][1];
+			int y1 = upper_place[i][0];
+			int y2 = down_place[j][0];
+			if (x1 >= 0 && x1 <= 9 && x2 >= 0 && x2 <= 9 && y1 >= 0 && y1 <= 9 && y2 >= 0 && y2 <= 9) {
+				if (bridge[y1][x1] != 0 && (bridge[y1][x1] == bridge[y2][x2])) {
+					return 0;
+				}
+			}
+		}
+	}
+	return 1;
+}
+
+int generate_cross_check_place(int up_point[2], int is_slash, int upper_place[5][2], int down_place[5][2]) {
+	int bias = is_slash ? -1 : 1;
+	upper_place[0][0] = up_point[0] - 1;
+	upper_place[0][1] = up_point[1] + (1) * bias;
+
+	upper_place[1][0] = up_point[0];
+	upper_place[1][1] = up_point[1] - (1) * bias;
+
+	upper_place[2][0] = up_point[0];
+	upper_place[2][1] = up_point[1] + (2) * bias;
+
+	upper_place[3][0] = up_point[0] + 1;
+	upper_place[3][1] = up_point[1] + (2) * bias;
+
+	upper_place[0][0] = up_point[0] + 1;
+	upper_place[0][1] = up_point[1] + (3) * bias;
+
+	down_place[0][0] = up_point[0] + 1;
+	down_place[0][1] = up_point[1] + (-1) * bias;
+
+	down_place[1][0] = up_point[0] + 1;
+	down_place[1][1] = up_point[1] ;
+
+	down_place[2][0] = up_point[0] + 2;
+	down_place[2][1] = up_point[1] ;
+
+	down_place[3][0] = up_point[0] + 2;
+	down_place[3][1] = up_point[1] + (1) * bias;
+
+	down_place[4][0] = up_point[0] + 3;
+	down_place[4][1] = up_point[1] + (1) * bias;
+
+	return 0;
 }
 
 int next_bridge(board* b, int next_bridge[NEXTBRIDGENUM][2]) {
@@ -561,9 +634,10 @@ int test() {
 	*/
 	//mark_prohibit_by_tile(&a);
 	mark_prohibit_tile(&a);
-	int t[2] = { 0,2 };
-	int t2[2] = { 2,2 };
-	int r = straight_bridge(a.bridge, t, t2);
+	int t[2] = { 2,1 };
+	int t2[2] = { 0,3 };
+	int r = cross_bridge(a.bridge, t, t2);
+
 
 	printf("count donw\n");
 	print_board(&a);
