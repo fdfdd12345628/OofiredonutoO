@@ -37,6 +37,7 @@ typedef struct board
 	int connected_tile_group[10][10];
 	int computed_prohibit_tile;
 	int computed_connected;
+	//int computed_group_num;
 
 } board;
 
@@ -49,6 +50,7 @@ int init_board(board* b) {
 	memcpy(b->connected_tile_group, init_board_content, sizeof(init_board_content));
 	b->computed_prohibit_tile = 0;
 	b->computed_connected = 0;
+	//b->computed_group_num = 0;
 	return 0;
 }
 
@@ -156,22 +158,59 @@ int count_all_connect_tile(board* b) {
 	return 0;
 }
 
-/*
-int check_surround_tile_group_num() {
 
+int check_surround_tile_group_num(board* b, int tile_board[10][10], int x, int y, int depth, int color, int searched[10][10], int group_num) {
+	if (searched[x][y] == 1) {
+		return 0;
+	}
+	if (tile_board[x][y] == color) {
+		searched[x][y] = 1;
+		b->connected_tile_group[x][y] = group_num;
+		if (depth == 0) {
+			return 1;
+		}
+
+
+		if (x > 0) {
+			check_surround_tile_group_num(b, tile_board, x - 1, y, depth - 1, color, searched, group_num);
+		}
+		if (y > 0) {
+			check_surround_tile_group_num(b,tile_board, x, y - 1, depth - 1, color, searched, group_num);
+		}
+		if (x < 9) {
+			check_surround_tile_group_num(b,tile_board, x + 1, y, depth - 1, color, searched, group_num);
+		}
+		if (y < 9) {
+			check_surround_tile_group_num(b,tile_board, x, y + 1, depth - 1, color, searched, group_num);
+		}
+
+	}
+	return 0;
 }
 
 int count_all_connect_tile_group_num(board* b) {
 	int i, j;
 	if (!b->computed_connected) count_all_connect_tile(b);
+	int init_group[10][10] = { 0 };
+	// memcpy(b->connected_tile_group, init_group, sizeof(b->connected_tile_group));
+	int group_num = 1;
 	for (i = 0; i < 10; i++) {
 		for (j = 0; j < 10; j++) {
-
+			if (b->connected_tile_group[i][j] != -1) {
+				continue;
+			}
+			int search[10][10] = { 0 };
+			if (b->tile[i][j] == 0) {
+				b->connected_tile_group[i][j] = 0;
+				continue;
+			}
+			check_surround_tile_group_num(b,b->tile, i, j, 3, b->tile[i][j], search, group_num);
+			group_num++;
 		}
 	}
 
 }
-*/
+
 
 int mark_prohibit_tile(board* b) {
 	if (b->computed_prohibit_tile) return 0;
@@ -353,7 +392,7 @@ int check_island_corner_tile(board* b) {
 						int y = i + k;
 						int x = j + l;
 						if (x >= 0 && x <= 9 && y >= 0 && y <= 9) {
-							if (b->connected_tile[y][x] != 4 && b->tile[y][x] == b->color) {
+							if (b->tile[y][x] == b->color && (b->connected_tile_group[y][x]!=b->connected_tile_group[i][j])) {
 								prohibit = 1;
 							}
 						}
@@ -467,8 +506,8 @@ int L_bridge(int bridge[10][10], int start[2], int end[2]) {
 				//int bias = is_slash ? -1 : 1;
 				int x1 = up_point[1];// + (1 + i) * bias;
 				int x2 = down_point[1];// + (1 + j) * bias;
-				int y1 = up_point[0] - (1 + i) * bias;
-				int y2 = down_point[0] + (1 + j) * bias;
+				int y1 = up_point[0] + (1 + i) * bias;
+				int y2 = down_point[0] - (1 + j) * bias;
 				if (x1 >= 0 && x1 <= 9 && x2 >= 0 && x2 <= 9 && y1 >= 0 && y1 <= 9 && y2 >= 0 && y2 <= 9) {
 					if (bridge[y1][x1] != 0 && (bridge[y1][x1] == bridge[y2][x2])) {
 						return 0;
@@ -503,12 +542,12 @@ int cross_bridge(int bridge[10][10], int start[2], int end[2]) {
 	{
 		is_slash = 0;
 	}
-	int upper_place[5][2] = { 0 };
-	int down_place[5][2] = { 0 };
+	int upper_place[7][2] = { 0 };
+	int down_place[7][2] = { 0 };
 	generate_cross_check_place(up_point, is_slash, upper_place, down_place);
 	int i, j;
-	for (i = 0; i < 5; i++) {
-		for (j = 0; j < 5; j++) {
+	for (i = 0; i < 7; i++) {
+		for (j = 0; j < 7; j++) {
 			int x1 = upper_place[i][1];
 			int x2 = down_place[j][1];
 			int y1 = upper_place[i][0];
@@ -523,7 +562,7 @@ int cross_bridge(int bridge[10][10], int start[2], int end[2]) {
 	return 1;
 }
 
-int generate_cross_check_place(int up_point[2], int is_slash, int upper_place[5][2], int down_place[5][2]) {
+int generate_cross_check_place(int up_point[2], int is_slash, int upper_place[7][2], int down_place[7][2]) {
 	int bias = is_slash ? -1 : 1;
 	upper_place[0][0] = up_point[0] - 1;
 	upper_place[0][1] = up_point[1] + (1) * bias;
@@ -537,8 +576,14 @@ int generate_cross_check_place(int up_point[2], int is_slash, int upper_place[5]
 	upper_place[3][0] = up_point[0] + 1;
 	upper_place[3][1] = up_point[1] + (2) * bias;
 
-	upper_place[0][0] = up_point[0] + 1;
-	upper_place[0][1] = up_point[1] + (3) * bias;
+	upper_place[4][0] = up_point[0] + 1;
+	upper_place[4][1] = up_point[1] + (3) * bias;
+
+	upper_place[5][0] = up_point[0] - 1;
+	upper_place[5][1] = up_point[1] + (2) * bias;
+	
+	upper_place[6][0] = up_point[0];
+	upper_place[6][1] = up_point[1] + (3) * bias;
 	
 
 	down_place[0][0] = up_point[0] + 1;
@@ -555,6 +600,12 @@ int generate_cross_check_place(int up_point[2], int is_slash, int upper_place[5]
 
 	down_place[4][0] = up_point[0] + 3;
 	down_place[4][1] = up_point[1] + (1) * bias;
+
+	down_place[5][0] = up_point[0] + 2;
+	down_place[5][1] = up_point[1] + (-1) * bias;
+
+	down_place[6][0] = up_point[0] + 3;
+	down_place[6][1] = up_point[1];
 
 	return 0;
 }
@@ -654,6 +705,7 @@ int next_tile_move(board* b, int x, int y) {
 		temp_b.tile[y][x] = temp_b.color;
 		temp_b.computed_connected = 0;
 		temp_b.computed_prohibit_tile = 0;
+		count_all_connect_tile_group_num(&temp_b);
 		int r = check_island_corner_tile(&temp_b);
 		if(r) 
 			return 0;
@@ -1212,6 +1264,7 @@ int test() {
 	int start[2] = { 5,0 };
 	int end[2] = { 7,2 };
 	r = cross_bridge(a.bridge, start,end);
+	count_all_connect_tile_group_num(&a);
 
 	printf("count donw\n");
 	//print_board(&a);
@@ -1220,7 +1273,7 @@ int test() {
 
 int main(int argc, char* argv[])
 {
-	test();
+	//test();
 	printf("Hello world!\n");
 	board a = {
 		BLACK,
@@ -1228,7 +1281,7 @@ int main(int argc, char* argv[])
 		{0},
 	};
 
-	//random_AI(argc, argv);
+	random_AI(argc, argv);
 	return 0;
 
 }
