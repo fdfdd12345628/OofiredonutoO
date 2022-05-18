@@ -175,13 +175,13 @@ int check_surround_tile_group_num(board* b, int tile_board[10][10], int x, int y
 			check_surround_tile_group_num(b, tile_board, x - 1, y, depth - 1, color, searched, group_num);
 		}
 		if (y > 0) {
-			check_surround_tile_group_num(b,tile_board, x, y - 1, depth - 1, color, searched, group_num);
+			check_surround_tile_group_num(b, tile_board, x, y - 1, depth - 1, color, searched, group_num);
 		}
 		if (x < 9) {
-			check_surround_tile_group_num(b,tile_board, x + 1, y, depth - 1, color, searched, group_num);
+			check_surround_tile_group_num(b, tile_board, x + 1, y, depth - 1, color, searched, group_num);
 		}
 		if (y < 9) {
-			check_surround_tile_group_num(b,tile_board, x, y + 1, depth - 1, color, searched, group_num);
+			check_surround_tile_group_num(b, tile_board, x, y + 1, depth - 1, color, searched, group_num);
 		}
 
 	}
@@ -204,7 +204,7 @@ int count_all_connect_tile_group_num(board* b) {
 				b->connected_tile_group[i][j] = 0;
 				continue;
 			}
-			check_surround_tile_group_num(b,b->tile, i, j, 3, b->tile[i][j], search, group_num);
+			check_surround_tile_group_num(b, b->tile, i, j, 3, b->tile[i][j], search, group_num);
 			group_num++;
 		}
 	}
@@ -280,7 +280,7 @@ int mark_prohibit_tile_by_tile(board* b) {
 					}
 
 				}
-				
+
 				b->prohibit_tile[i][j] = 1;
 			}
 
@@ -378,7 +378,7 @@ int mark_prohibit_tile_by_bridge(board* b) {
 
 int check_island_corner_tile(board* b) {
 	// return 1 for finded
-	if (!b->computed_connected) 
+	if (!b->computed_connected)
 		count_all_connect_tile(b);
 
 	int i, j, k, l;
@@ -386,13 +386,13 @@ int check_island_corner_tile(board* b) {
 	for (i = 0; i < 10; i++) {
 		for (j = 0; j < 10; j++) {
 			if (b->connected_tile[i][j] == 4) {
-				
+
 				for (k = -1; k < 2; k++) {
 					for (l = -1; l < 2; l++) {
 						int y = i + k;
 						int x = j + l;
 						if (x >= 0 && x <= 9 && y >= 0 && y <= 9) {
-							if (b->tile[y][x] == b->color && (b->connected_tile_group[y][x]!=b->connected_tile_group[i][j])) {
+							if (b->tile[y][x] == b->color && (b->connected_tile_group[y][x] != b->connected_tile_group[i][j])) {
 								prohibit = 1;
 							}
 						}
@@ -581,10 +581,10 @@ int generate_cross_check_place(int up_point[2], int is_slash, int upper_place[7]
 
 	upper_place[5][0] = up_point[0] - 1;
 	upper_place[5][1] = up_point[1] + (2) * bias;
-	
+
 	upper_place[6][0] = up_point[0];
 	upper_place[6][1] = up_point[1] + (3) * bias;
-	
+
 
 	down_place[0][0] = up_point[0] + 1;
 	down_place[0][1] = up_point[1] + (-1) * bias;
@@ -707,7 +707,7 @@ int next_tile_move(board* b, int x, int y) {
 		temp_b.computed_prohibit_tile = 0;
 		count_all_connect_tile_group_num(&temp_b);
 		int r = check_island_corner_tile(&temp_b);
-		if(r) 
+		if (r)
 			return 0;
 		if (temp_b.connected_tile[y][x] > 4)
 			return 0;
@@ -1136,6 +1136,7 @@ int next_move(board* b, int next_tile[NEXTMOVENUM][10][10], int next_bridge[NEXT
 	return 0;
 }
 
+// potential bug
 int count_island_lenght(board* b, int x, int y, int searched[10][10]) {
 	// return lenght of island
 	if (searched[x][y])
@@ -1145,7 +1146,7 @@ int count_island_lenght(board* b, int x, int y, int searched[10][10]) {
 	int group_num = b->connected_tile_group[x][y];
 	int next_index = 0;
 	tag_finded(b, searched, group_num, x, y, 3, next_bridge, &next_index);
-	int i, max=0;
+	int i, max = 0;
 	for (i = 0; i < 3; i++) {
 		if (next_bridge[i][0] == -1)
 			break;
@@ -1156,7 +1157,7 @@ int count_island_lenght(board* b, int x, int y, int searched[10][10]) {
 		int finded = 0;
 		for (j = 0; j < 10; j++) {
 			for (k = 0; k < 10; k++) {
-				if (b->bridge[j][k] == bridge_num &&!( (next_bridge[i][0]==j)&& (next_bridge[i][1] == k))) {
+				if (b->bridge[j][k] == bridge_num && !((next_bridge[i][0] == j) && (next_bridge[i][1] == k))) {
 					finded = 1;
 					break;
 				}
@@ -1177,7 +1178,7 @@ int count_island_lenght(board* b, int x, int y, int searched[10][10]) {
 	return max;
 }
 
-int tag_finded(board* b, int searched[10][10],int group_num, int x, int y, int depth, int next_bridge[3][2], int* next_index) {
+int tag_finded(board* b, int searched[10][10], int group_num, int x, int y, int depth, int next_bridge[3][2], int* next_index) {
 	if (searched[x][y] == 1) {
 		return 0;
 	}
@@ -1192,16 +1193,16 @@ int tag_finded(board* b, int searched[10][10],int group_num, int x, int y, int d
 			return 1;
 		}
 		if (x > 0) {
-			tag_finded(b,searched,group_num, x - 1, y, depth - 1, next_bridge, next_index);
+			tag_finded(b, searched, group_num, x - 1, y, depth - 1, next_bridge, next_index);
 		}
 		if (y > 0) {
-			tag_finded(b, searched, group_num, x, y-1, depth - 1, next_bridge, next_index);
+			tag_finded(b, searched, group_num, x, y - 1, depth - 1, next_bridge, next_index);
 		}
 		if (x < 9) {
 			tag_finded(b, searched, group_num, x + 1, y, depth - 1, next_bridge, next_index);
 		}
 		if (y < 9) {
-			tag_finded(b, searched, group_num, x, y+1, depth - 1, next_bridge, next_index);
+			tag_finded(b, searched, group_num, x, y + 1, depth - 1, next_bridge, next_index);
 		}
 
 	}
@@ -1209,6 +1210,11 @@ int tag_finded(board* b, int searched[10][10],int group_num, int x, int y, int d
 }
 
 int count_score(board* b) {
+	int self_score = 0;
+	int opponent_score = 0;
+	int score_list[] = {
+		0,1,3,6,10,15,21,28,36, 45, 55, 66, 78
+	};
 
 }
 
@@ -1262,7 +1268,7 @@ int random_AI(int argc, char* argv[]) {
 
 
 	srand(time(NULL));
-	
+
 	for (i = 0; i < NEXTMOVENUM; i++) {
 		if (next_tile[i][0][0] != -1) {
 			available_tile_move = i + 1;
@@ -1271,9 +1277,9 @@ int random_AI(int argc, char* argv[]) {
 			available_bridge_move = i + 1;
 		}
 	}
-	
-	int random_move=rand() % (available_tile_move+ available_bridge_move);
-	if (random_move < available_tile_move && available_tile_move!=0) {
+
+	int random_move = rand() % (available_tile_move + available_bridge_move);
+	if (random_move < available_tile_move && available_tile_move != 0) {
 		next_board = origin_board;
 		memcpy(next_board.tile, next_tile[random_move], sizeof(next_board.bridge));
 	}
@@ -1350,7 +1356,7 @@ int test() {
 	int next_index = 0;
 	int searched[10][10] = { 0 };
 	//tag_finded(&a, searched, group_num, pos[0], pos[1], 3, next_bridge_pos, &next_index);
-	int r=count_island_lenght(&a, pos[0], pos[1], searched);
+	int r = count_island_lenght(&a, pos[0], pos[1], searched);
 	printf("count donw\n");
 	//print_board(&a);
 	return 0;
