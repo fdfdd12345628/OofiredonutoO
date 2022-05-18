@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include<time.h>
 
 #define DEPTH 8
 #define INF 0x7FFFFFFF
@@ -33,6 +34,7 @@ typedef struct board
 	int bridge[10][10];
 	int prohibit_tile[10][10];
 	int connected_tile[10][10];
+	int connected_tile_group[10][10];
 	int computed_prohibit_tile;
 	int computed_connected;
 
@@ -44,6 +46,7 @@ int init_board(board* b) {
 	memcpy(b->bridge, init_board_content, sizeof(init_board_content));
 	memcpy(b->prohibit_tile, init_board_content, sizeof(init_board_content));
 	memcpy(b->connected_tile, init_board_content, sizeof(init_board_content));
+	memcpy(b->connected_tile_group, init_board_content, sizeof(init_board_content));
 	b->computed_prohibit_tile = 0;
 	b->computed_connected = 0;
 	return 0;
@@ -93,7 +96,7 @@ void print_board(board* b) {
 	}
 	printf("bridge:\n");
 	for (i = 0; i < 10; i++) {
-		// printf("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", b->bridge[i][0], b->bridge[i][1], b->bridge[i][2], b->bridge[i][3], b->bridge[i][4], b->bridge[i][5], b->bridge[i][6], b->bridge[i][7], b->bridge[i][8], b->bridge[i][9]);
+		printf("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", b->bridge[i][0], b->bridge[i][1], b->bridge[i][2], b->bridge[i][3], b->bridge[i][4], b->bridge[i][5], b->bridge[i][6], b->bridge[i][7], b->bridge[i][8], b->bridge[i][9]);
 	}
 
 	printf("\n\n\n");
@@ -144,7 +147,7 @@ int count_all_connect_tile(board* b) {
 	for (i = 0; i < 10; i++) {
 		for (j = 0; j < 10; j++) {
 			int search[10][10] = { 0 };
-			b->connected_tile[i][j] = count_surround_tile(b->tile, i, j, 3, tile_color_num, search);
+			b->connected_tile[i][j] = count_surround_tile(b->tile, i, j, 5, tile_color_num, search);
 
 		}
 		// printf("");
@@ -152,6 +155,23 @@ int count_all_connect_tile(board* b) {
 	b->computed_connected = 1;
 	return 0;
 }
+
+/*
+int check_surround_tile_group_num() {
+
+}
+
+int count_all_connect_tile_group_num(board* b) {
+	int i, j;
+	if (!b->computed_connected) count_all_connect_tile(b);
+	for (i = 0; i < 10; i++) {
+		for (j = 0; j < 10; j++) {
+
+		}
+	}
+
+}
+*/
 
 int mark_prohibit_tile(board* b) {
 	if (b->computed_prohibit_tile) return 0;
@@ -221,7 +241,7 @@ int mark_prohibit_tile_by_tile(board* b) {
 					}
 
 				}
-
+				
 				b->prohibit_tile[i][j] = 1;
 			}
 
@@ -315,6 +335,34 @@ int mark_prohibit_tile_by_bridge(board* b) {
 			}
 		}
 	}
+}
+
+int check_island_corner_tile(board* b) {
+	// return 1 for finded
+	if (!b->computed_connected) 
+		count_all_connect_tile(b);
+
+	int i, j, k, l;
+	int prohibit = 0;
+	for (i = 0; i < 10; i++) {
+		for (j = 0; j < 10; j++) {
+			if (b->connected_tile[i][j] == 4) {
+				
+				for (k = -1; k < 2; k++) {
+					for (l = -1; l < 2; l++) {
+						int y = i + k;
+						int x = j + l;
+						if (x >= 0 && x <= 9 && y >= 0 && y <= 9) {
+							if (b->connected_tile[y][x] != 4 && b->tile[y][x] == b->color) {
+								prohibit = 1;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return prohibit;
 }
 
 // exclude cross bridge of a straight bridge
@@ -481,7 +529,7 @@ int generate_cross_check_place(int up_point[2], int is_slash, int upper_place[5]
 	upper_place[0][1] = up_point[1] + (1) * bias;
 
 	upper_place[1][0] = up_point[0];
-	upper_place[1][1] = up_point[1] - (1) * bias;
+	upper_place[1][1] = up_point[1] + (1) * bias;
 
 	upper_place[2][0] = up_point[0];
 	upper_place[2][1] = up_point[1] + (2) * bias;
@@ -491,6 +539,7 @@ int generate_cross_check_place(int up_point[2], int is_slash, int upper_place[5]
 
 	upper_place[0][0] = up_point[0] + 1;
 	upper_place[0][1] = up_point[1] + (3) * bias;
+	
 
 	down_place[0][0] = up_point[0] + 1;
 	down_place[0][1] = up_point[1] + (-1) * bias;
@@ -510,6 +559,7 @@ int generate_cross_check_place(int up_point[2], int is_slash, int upper_place[5]
 	return 0;
 }
 
+/*
 int next_bridge_move(board* b, int next_bridge[NEXTBRIDGENUM][2]) {
 	int i, j;
 	int tile_color_num;
@@ -588,7 +638,7 @@ int next_bridge_move(board* b, int next_bridge[NEXTBRIDGENUM][2]) {
 		}
 	}
 }
-
+*/
 int next_tile_move(board* b, int x, int y) {
 	// return 1 for success
 
@@ -600,7 +650,17 @@ int next_tile_move(board* b, int x, int y) {
 	}
 	else
 	{
+		board temp_b = *b;
+		temp_b.tile[y][x] = temp_b.color;
+		temp_b.computed_connected = 0;
+		temp_b.computed_prohibit_tile = 0;
+		int r = check_island_corner_tile(&temp_b);
+		if(r) 
+			return 0;
+		if (temp_b.connected_tile[y][x] > 4)
+			return 0;
 		b->tile[y][x] = b->color;
+		b->computed_connected = 0;
 		b->computed_prohibit_tile = 0;
 		mark_prohibit_tile(b);
 		return 1;
@@ -624,7 +684,8 @@ int next_move(board* b, int next_tile[NEXTMOVENUM][10][10], int next_bridge[NEXT
 			board temp_b = *b;
 			int result1 = next_tile_move(&temp_b, i, j);
 			if (result1) {
-
+				//if (check_island_corner_tile(&temp_b)) 
+				//	continue;
 				// second tile
 				int i2, j2;
 				for (i2 = 0; i2 < 10; i2++) {
@@ -632,6 +693,8 @@ int next_move(board* b, int next_tile[NEXTMOVENUM][10][10], int next_bridge[NEXT
 						board temp_b2 = temp_b;
 						int result2 = next_tile_move(&temp_b2, i2, j2);
 						if (result2) {
+							//if (check_island_corner_tile(&temp_b2)) 
+							//	continue;
 							if (m < NEXTMOVENUM) {
 								memcpy(next_tile[m], temp_b2.tile, sizeof(temp_b2.tile));
 								m++;
@@ -667,318 +730,350 @@ int next_move(board* b, int next_tile[NEXTMOVENUM][10][10], int next_bridge[NEXT
 			board temp_b = *b;
 			if (temp_b.bridge[i][j] == 0 && temp_b.tile[i][j] == temp_b.color) {
 				// int bridge_num = temp_b.bridge[i][j];
-
+				printf("");
 				if (i > 1 && temp_b.tile[i - 2][j] == temp_b.color && temp_b.bridge[i - 2][j] == 0) {
 					if (temp_b.tile[i - 1][j] != 0) {
-						continue;
+						//continue;
 					}
-					int start[2], end[2];
-					start[0] = i;
-					start[1] = j;
-					end[0] = i - 2;
-					end[1] = j;
-					int r = straight_bridge(temp_b.bridge, start, end);
-					if (r) {
-						memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
+					else {
+						int start[2], end[2];
+						start[0] = i;
+						start[1] = j;
+						end[0] = i - 2;
+						end[1] = j;
+						int r = straight_bridge(temp_b.bridge, start, end);
+						if (r) {
+							memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
 
 
-						next_bridge[m][start[0]][start[1]] = largest_bridge_num;
-						next_bridge[m][end[0]][end[1]] = largest_bridge_num;
-						m++;
+							next_bridge[m][start[0]][start[1]] = largest_bridge_num;
+							next_bridge[m][end[0]][end[1]] = largest_bridge_num;
+							m++;
+						}
 					}
 				}
 				if (i > 1 && j > 0 && temp_b.tile[i - 2][j - 1] == temp_b.color && temp_b.bridge[i - 2][j - 1] == 0) {
 					if (temp_b.tile[i - 1][j] != 0 ||
 						temp_b.tile[i - 1][j - 1] != 0) {
-						continue;
+						//continue;
 					}
-					int start[2], end[2];
-					start[0] = i;
-					start[1] = j;
-					end[0] = i - 2;
-					end[1] = j - 1;
-					int r = L_bridge(temp_b.bridge, start, end);
-					if (r) {
-						memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
+					else {
+						int start[2], end[2];
+						start[0] = i;
+						start[1] = j;
+						end[0] = i - 2;
+						end[1] = j - 1;
+						int r = L_bridge(temp_b.bridge, start, end);
+						if (r) {
+							memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
 
 
-						next_bridge[m][start[0]][start[1]] = largest_bridge_num;
-						next_bridge[m][end[0]][end[1]] = largest_bridge_num;
-						m++;
+							next_bridge[m][start[0]][start[1]] = largest_bridge_num;
+							next_bridge[m][end[0]][end[1]] = largest_bridge_num;
+							m++;
+						}
 					}
 				}
 				if (i > 1 && j > 1 && temp_b.tile[i - 2][j - 2] == temp_b.color && temp_b.bridge[i - 2][j - 2] == 0) {
 					if (temp_b.tile[i - 1][j - 1] != 0) {
-						continue;
+						//continue;
 					}
-					int start[2], end[2];
-					start[0] = i;
-					start[1] = j;
-					end[0] = i - 2;
-					end[1] = j - 2;
-					int r = cross_bridge(temp_b.bridge, start, end);
-					if (r) {
-						memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
+					else {
+						int start[2], end[2];
+						start[0] = i;
+						start[1] = j;
+						end[0] = i - 2;
+						end[1] = j - 2;
+						int r = cross_bridge(temp_b.bridge, start, end);
+						if (r) {
+							memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
 
 
-						next_bridge[m][start[0]][start[1]] = largest_bridge_num;
-						next_bridge[m][end[0]][end[1]] = largest_bridge_num;
-						m++;
+							next_bridge[m][start[0]][start[1]] = largest_bridge_num;
+							next_bridge[m][end[0]][end[1]] = largest_bridge_num;
+							m++;
+						}
 					}
 				}
 				if (i > 0 && j > 1 && temp_b.tile[i - 1][j - 2] == temp_b.color && temp_b.bridge[i - 1][j - 2] == 0) {
 					if (temp_b.tile[i - 1][j - 1] != 0 ||
 						temp_b.tile[i][j - 1] != 0) {
-						continue;
+						//continue;
 					}
-					int start[2], end[2];
-					start[0] = i;
-					start[1] = j;
-					end[0] = i - 1;
-					end[1] = j - 2;
-					int r = L_bridge(temp_b.bridge, start, end);
-					if (r) {
-						memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
+					else {
+						int start[2], end[2];
+						start[0] = i;
+						start[1] = j;
+						end[0] = i - 1;
+						end[1] = j - 2;
+						int r = L_bridge(temp_b.bridge, start, end);
+						if (r) {
+							memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
 
 
-						next_bridge[m][start[0]][start[1]] = largest_bridge_num;
-						next_bridge[m][end[0]][end[1]] = largest_bridge_num;
-						m++;
+							next_bridge[m][start[0]][start[1]] = largest_bridge_num;
+							next_bridge[m][end[0]][end[1]] = largest_bridge_num;
+							m++;
+						}
 					}
 				}
 				if (j > 1 && temp_b.tile[i][j - 2] == temp_b.color && temp_b.bridge[i][j - 2] == 0) {
 					if (temp_b.tile[i][j - 1] != 0) {
-						continue;
+						//continue;
 					}
-					int start[2], end[2];
-					start[0] = i;
-					start[1] = j;
-					end[0] = i;
-					end[1] = j - 2;
-					int r = straight_bridge(temp_b.bridge, start, end);
-					if (r) {
-						memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
+					else {
+						int start[2], end[2];
+						start[0] = i;
+						start[1] = j;
+						end[0] = i;
+						end[1] = j - 2;
+						int r = straight_bridge(temp_b.bridge, start, end);
+						if (r) {
+							memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
 
 
-						next_bridge[m][start[0]][start[1]] = largest_bridge_num;
-						next_bridge[m][end[0]][end[1]] = largest_bridge_num;
-						m++;
+							next_bridge[m][start[0]][start[1]] = largest_bridge_num;
+							next_bridge[m][end[0]][end[1]] = largest_bridge_num;
+							m++;
+						}
 					}
 				}
 				if (i < 9 && j > 1 && temp_b.tile[i + 1][j - 2] == temp_b.color && temp_b.bridge[i + 1][j - 2] == 0) {
 					if (temp_b.tile[i + 1][j - 1] != 0 ||
 						temp_b.tile[i][j - 1] != 0) {
-						continue;
+						//continue;
 					}
-					int start[2], end[2];
-					start[0] = i;
-					start[1] = j;
-					end[0] = i + 1;
-					end[1] = j - 2;
-					int r = L_bridge(temp_b.bridge, start, end);
-					if (r) {
-						memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
+					else {
+						int start[2], end[2];
+						start[0] = i;
+						start[1] = j;
+						end[0] = i + 1;
+						end[1] = j - 2;
+						int r = L_bridge(temp_b.bridge, start, end);
+						if (r) {
+							memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
 
 
-						next_bridge[m][start[0]][start[1]] = largest_bridge_num;
-						next_bridge[m][end[0]][end[1]] = largest_bridge_num;
-						m++;
+							next_bridge[m][start[0]][start[1]] = largest_bridge_num;
+							next_bridge[m][end[0]][end[1]] = largest_bridge_num;
+							m++;
+						}
 					}
 				}
 				if (i < 8 && j > 1 && temp_b.tile[i + 2][j - 2] == temp_b.color && temp_b.bridge[i + 2][j - 2] == 0) {
 					if (temp_b.tile[i + 1][j - 1] != 0) {
-						continue;
+						//continue;
 					}
-					int start[2], end[2];
-					start[0] = i;
-					start[1] = j;
-					end[0] = i + 2;
-					end[1] = j - 2;
-					int r = cross_bridge(temp_b.bridge, start, end);
-					if (r) {
-						memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
+					else {
+						int start[2], end[2];
+						start[0] = i;
+						start[1] = j;
+						end[0] = i + 2;
+						end[1] = j - 2;
+						int r = cross_bridge(temp_b.bridge, start, end);
+						if (r) {
+							memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
 
 
-						next_bridge[m][start[0]][start[1]] = largest_bridge_num;
-						next_bridge[m][end[0]][end[1]] = largest_bridge_num;
-						m++;
+							next_bridge[m][start[0]][start[1]] = largest_bridge_num;
+							next_bridge[m][end[0]][end[1]] = largest_bridge_num;
+							m++;
+						}
 					}
 				}
 				if (i < 8 && j > 0 && temp_b.tile[i + 2][j - 1] == temp_b.color && temp_b.bridge[i + 2][j - 1] == 0) {
 					if (temp_b.tile[i + 1][j - 1] != 0 ||
 						temp_b.tile[i + 1][j] != 0) {
-						continue;
+						//continue;
 					}
-					int start[2], end[2];
-					start[0] = i;
-					start[1] = j;
-					end[0] = i + 2;
-					end[1] = j - 1;
-					int r = L_bridge(temp_b.bridge, start, end);
-					if (r) {
-						memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
+					else {
+						int start[2], end[2];
+						start[0] = i;
+						start[1] = j;
+						end[0] = i + 2;
+						end[1] = j - 1;
+						int r = L_bridge(temp_b.bridge, start, end);
+						if (r) {
+							memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
 
 
-						next_bridge[m][start[0]][start[1]] = largest_bridge_num;
-						next_bridge[m][end[0]][end[1]] = largest_bridge_num;
-						m++;
+							next_bridge[m][start[0]][start[1]] = largest_bridge_num;
+							next_bridge[m][end[0]][end[1]] = largest_bridge_num;
+							m++;
+						}
 					}
 				}
 				if (i < 8 && temp_b.tile[i + 2][j] == temp_b.color && temp_b.bridge[i + 2][j] == 0) {
 					if (temp_b.tile[i + 1][j] != 0) {
-						continue;
+						//continue;
 					}
-					int start[2], end[2];
-					start[0] = i;
-					start[1] = j;
-					end[0] = i + 2;
-					end[1] = j;
-					int r = straight_bridge(temp_b.bridge, start, end);
-					if (r) {
-						memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
+					else {
+						int start[2], end[2];
+						start[0] = i;
+						start[1] = j;
+						end[0] = i + 2;
+						end[1] = j;
+						int r = straight_bridge(temp_b.bridge, start, end);
+						if (r) {
+							memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
 
 
-						next_bridge[m][start[0]][start[1]] = largest_bridge_num;
-						next_bridge[m][end[0]][end[1]] = largest_bridge_num;
-						m++;
+							next_bridge[m][start[0]][start[1]] = largest_bridge_num;
+							next_bridge[m][end[0]][end[1]] = largest_bridge_num;
+							m++;
+						}
 					}
 				}
 				if (i < 8 && j < 9 && temp_b.tile[i + 2][j + 1] == temp_b.color && temp_b.bridge[i + 2][j + 1] == 0) {
 					if (temp_b.tile[i + 1][j] != 0 ||
 						temp_b.tile[i + 1][j + 1] != 0) {
-						continue;
+						//continue;
 					}
-					int start[2], end[2];
-					start[0] = i;
-					start[1] = j;
-					end[0] = i + 2;
-					end[1] = j + 1;
-					int r = L_bridge(temp_b.bridge, start, end);
-					if (r) {
-						memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
+					else {
+						int start[2], end[2];
+						start[0] = i;
+						start[1] = j;
+						end[0] = i + 2;
+						end[1] = j + 1;
+						int r = L_bridge(temp_b.bridge, start, end);
+						if (r) {
+							memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
 
 
-						next_bridge[m][start[0]][start[1]] = largest_bridge_num;
-						next_bridge[m][end[0]][end[1]] = largest_bridge_num;
-						m++;
+							next_bridge[m][start[0]][start[1]] = largest_bridge_num;
+							next_bridge[m][end[0]][end[1]] = largest_bridge_num;
+							m++;
+						}
 					}
 				}
 				if (i < 8 && j < 8 && temp_b.tile[i + 2][j + 2] == temp_b.color && temp_b.bridge[i + 2][j + 2] == 0) {
 					if (temp_b.tile[i + 1][j + 1] != 0) {
-						continue;
+						//continue;
 					}
-					int start[2], end[2];
-					start[0] = i;
-					start[1] = j;
-					end[0] = i + 2;
-					end[1] = j + 2;
-					int r = cross_bridge(temp_b.bridge, start, end);
-					if (r) {
-						memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
+					else {
+						int start[2], end[2];
+						start[0] = i;
+						start[1] = j;
+						end[0] = i + 2;
+						end[1] = j + 2;
+						int r = cross_bridge(temp_b.bridge, start, end);
+						if (r) {
+							memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
 
 
-						next_bridge[m][start[0]][start[1]] = largest_bridge_num;
-						next_bridge[m][end[0]][end[1]] = largest_bridge_num;
-						m++;
+							next_bridge[m][start[0]][start[1]] = largest_bridge_num;
+							next_bridge[m][end[0]][end[1]] = largest_bridge_num;
+							m++;
+						}
 					}
 				}
 				if (i < 9 && j < 8 && temp_b.tile[i + 1][j + 2] == temp_b.color && temp_b.bridge[i + 1][j + 2] == 0) {
 					if (temp_b.tile[i + 1][j + 1] != 0 ||
 						temp_b.tile[i][j + 1] != 0) {
-						continue;
+						//continue;
 					}
-					int start[2], end[2];
-					start[0] = i;
-					start[1] = j;
-					end[0] = i + 1;
-					end[1] = j + 2;
-					int r = L_bridge(temp_b.bridge, start, end);
-					if (r) {
-						memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
+					else {
+						int start[2], end[2];
+						start[0] = i;
+						start[1] = j;
+						end[0] = i + 1;
+						end[1] = j + 2;
+						int r = L_bridge(temp_b.bridge, start, end);
+						if (r) {
+							memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
 
 
-						next_bridge[m][start[0]][start[1]] = largest_bridge_num;
-						next_bridge[m][end[0]][end[1]] = largest_bridge_num;
-						m++;
+							next_bridge[m][start[0]][start[1]] = largest_bridge_num;
+							next_bridge[m][end[0]][end[1]] = largest_bridge_num;
+							m++;
+						}
 					}
 				}
 				if (j < 8 && temp_b.tile[i][j + 2] == temp_b.color && temp_b.bridge[i][j + 2] == 0) {
 					if (temp_b.tile[i][j + 1] != 0) {
-						continue;
+						//continue;
 					}
-					int start[2], end[2];
-					start[0] = i;
-					start[1] = j;
-					end[0] = i;
-					end[1] = j + 2;
-					int r = straight_bridge(temp_b.bridge, start, end);
-					if (r) {
-						memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
+					else {
+						int start[2], end[2];
+						start[0] = i;
+						start[1] = j;
+						end[0] = i;
+						end[1] = j + 2;
+						int r = straight_bridge(temp_b.bridge, start, end);
+						if (r) {
+							memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
 
 
-						next_bridge[m][start[0]][start[1]] = largest_bridge_num;
-						next_bridge[m][end[0]][end[1]] = largest_bridge_num;
-						m++;
+							next_bridge[m][start[0]][start[1]] = largest_bridge_num;
+							next_bridge[m][end[0]][end[1]] = largest_bridge_num;
+							m++;
+						}
 					}
 
 				}
 				if (i > 0 && j < 8 && temp_b.tile[i - 1][j + 2] == temp_b.color && temp_b.bridge[i - 1][j + 2] == 0) {
 					if (temp_b.tile[i][j + 1] != 0 ||
 						temp_b.tile[i - 1][j + 1] != 0) {
-						continue;
+						//continue;
 					}
-					int start[2], end[2];
-					start[0] = i;
-					start[1] = j;
-					end[0] = i - 1;
-					end[1] = j + 2;
-					int r = L_bridge(temp_b.bridge, start, end);
-					if (r) {
-						memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
+					else {
+						int start[2], end[2];
+						start[0] = i;
+						start[1] = j;
+						end[0] = i - 1;
+						end[1] = j + 2;
+						int r = L_bridge(temp_b.bridge, start, end);
+						if (r) {
+							memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
 
 
-						next_bridge[m][start[0]][start[1]] = largest_bridge_num;
-						next_bridge[m][end[0]][end[1]] = largest_bridge_num;
-						m++;
+							next_bridge[m][start[0]][start[1]] = largest_bridge_num;
+							next_bridge[m][end[0]][end[1]] = largest_bridge_num;
+							m++;
+						}
 					}
 				}
 				if (i > 1 && j < 8 && temp_b.tile[i - 2][j + 2] == temp_b.color && temp_b.bridge[i - 2][j + 2] == 0) {
 					if (temp_b.tile[i - 1][j + 1] != 0) {
-						continue;
+						//continue;
 					}
-					int start[2], end[2];
-					start[0] = i;
-					start[1] = j;
-					end[0] = i - 2;
-					end[1] = j + 2;
-					int r = cross_bridge(temp_b.bridge, start, end);
-					if (r) {
-						memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
+					else {
+						int start[2], end[2];
+						start[0] = i;
+						start[1] = j;
+						end[0] = i - 2;
+						end[1] = j + 2;
+						int r = cross_bridge(temp_b.bridge, start, end);
+						if (r) {
+							memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
 
 
-						next_bridge[m][start[0]][start[1]] = largest_bridge_num;
-						next_bridge[m][end[0]][end[1]] = largest_bridge_num;
-						m++;
+							next_bridge[m][start[0]][start[1]] = largest_bridge_num;
+							next_bridge[m][end[0]][end[1]] = largest_bridge_num;
+							m++;
+						}
 					}
 				}
 				if (i > 1 && j < 9 && temp_b.tile[i - 2][j + 1] == temp_b.color && temp_b.bridge[i - 2][j + 1] == 0) {
 					if (temp_b.tile[i - 1][j + 1] != 0 ||
 						temp_b.tile[i - 1][j] != 0) {
-						continue;
+						//continue;
 					}
-					int start[2], end[2];
-					start[0] = i;
-					start[1] = j;
-					end[0] = i - 2;
-					end[1] = j + 1;
-					int r = L_bridge(temp_b.bridge, start, end);
-					if (r) {
-						memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
+					else {
+						int start[2], end[2];
+						start[0] = i;
+						start[1] = j;
+						end[0] = i - 2;
+						end[1] = j + 1;
+						int r = L_bridge(temp_b.bridge, start, end);
+						if (r) {
+							memcpy(next_bridge[m], temp_b.bridge, sizeof(temp_b.bridge));
 
 
-						next_bridge[m][start[0]][start[1]] = largest_bridge_num;
-						next_bridge[m][end[0]][end[1]] = largest_bridge_num;
-						m++;
+							next_bridge[m][start[0]][start[1]] = largest_bridge_num;
+							next_bridge[m][end[0]][end[1]] = largest_bridge_num;
+							m++;
+						}
 					}
 				}
 
@@ -988,7 +1083,6 @@ int next_move(board* b, int next_tile[NEXTMOVENUM][10][10], int next_bridge[NEXT
 
 	return 0;
 }
-
 
 
 int AI(int argc, char* argv[]) {
@@ -1003,6 +1097,67 @@ int AI(int argc, char* argv[]) {
 		return -1;
 	}
 
+}
+
+int random_AI(int argc, char* argv[]) {
+	if (argc != 6) {
+		printf("error parameters input count\n");
+		return -1;
+	}
+	board origin_board;
+	board next_board;
+	init_board(&origin_board);
+	int r = read_board(argv[3], argv[4], &origin_board);
+	if (r != 0) {
+		printf("error read board\n");
+		return -1;
+	}
+	char player_color = argv[1][0];
+	if (player_color == 'W') {
+		origin_board.color = WHITE;
+	}
+	else if (player_color == 'B') {
+		origin_board.color = BLACK;
+	}
+	else
+	{
+		printf("error read player color\n");
+		return 0;
+	}
+	int next_tile[NEXTMOVENUM][10][10] = { 0 };
+	int next_bridge[NEXTMOVENUM][10][10] = { 0 };
+	int available_tile_move = 0;
+	int available_bridge_move = 0;
+	int i, m, j;
+
+
+	next_move(&origin_board, next_tile, next_bridge);
+
+
+	srand(time(NULL));
+	
+	for (i = 0; i < NEXTMOVENUM; i++) {
+		if (next_tile[i][0][0] != -1) {
+			available_tile_move = i + 1;
+		}
+		if (next_bridge[i][0][0] != -1) {
+			available_bridge_move = i + 1;
+		}
+	}
+	
+	int random_move=rand() % (available_tile_move+ available_bridge_move);
+	if (random_move < available_tile_move && available_tile_move!=0) {
+		next_board = origin_board;
+		memcpy(next_board.tile, next_tile[random_move], sizeof(next_board.bridge));
+	}
+	else {
+		random_move -= available_tile_move;
+		next_board = origin_board;
+		memcpy(next_board.bridge, next_bridge[random_move], sizeof(next_board.bridge));
+	}
+	write_board(argv[3], argv[4], &next_board);
+	print_board(&next_board);
+	return 0;
 }
 
 int test() {
@@ -1028,6 +1183,7 @@ int test() {
 	int next_bridge[NEXTMOVENUM][10][10] = { 0 };
 	next_move(&a, next_tile, next_bridge);
 	int i, j, m;
+	
 	for (m = 0; m < 100; m++) {
 		if (next_tile[m][0][0] == -1) continue;
 		printf("%d tile:\n", m);
@@ -1051,8 +1207,14 @@ int test() {
 			printf("\n");
 		}
 	}
+	int r= check_island_corner_tile(&a);
+
+	int start[2] = { 5,0 };
+	int end[2] = { 7,2 };
+	r = cross_bridge(a.bridge, start,end);
+
 	printf("count donw\n");
-	print_board(&a);
+	//print_board(&a);
 	return 0;
 }
 
@@ -1066,13 +1228,8 @@ int main(int argc, char* argv[])
 		{0},
 	};
 
-	if (argc == 0) {
-		printf("must input correct parameters\n");
-	}
-	else
-	{
-		AI(argc, argv);
-	}
+	//random_AI(argc, argv);
+	return 0;
 
 }
 
