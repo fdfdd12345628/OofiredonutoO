@@ -9,12 +9,13 @@
 #define DEPTH 2
 #define INF 0x7FFFFFFF
 #define NEGINF 0x80000000
-#define NEXTMOVENUM 50
+#define NEXTMOVENUM 40
 #define WHITE 1
 #define BLACK 2
 #define NEXTBRIDGENUM 100
 
 int total_node = 0;
+int out_of_time_node = 0;
 
 static int init_board_content[] = {
 	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
@@ -409,6 +410,35 @@ int check_island_corner_tile(board* b, int connected_num) {
 	}
 	return prohibit;
 }
+
+int count_island_corner_tile(board* b, int connected_num) {
+	// return 1 for finded
+	if (!b->computed_connected)
+		count_all_connect_tile(b);
+
+	int i, j, k, l;
+	int prohibit = 0;
+	for (i = 0; i < 10; i++) {
+		for (j = 0; j < 10; j++) {
+			if (b->connected_tile[i][j] == connected_num) {
+
+				for (k = -1; k < 2; k++) {
+					for (l = -1; l < 2; l++) {
+						int y = i + k;
+						int x = j + l;
+						if (x >= 0 && x <= 9 && y >= 0 && y <= 9) {
+							if (b->tile[y][x] == b->color && (b->connected_tile_group[y][x] != b->connected_tile_group[i][j])) {
+								prohibit +=1;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return prohibit;
+}
+
 
 // exclude cross bridge of a straight bridge
 int straight_bridge(int bridge[10][10], int start[2], int end[2]) {
@@ -1199,19 +1229,29 @@ int count_score(board* b) {
 	opponent_connect_num[4] /= 4;
 	// printf("our score: %d\n", self_score);
 	// printf("enemy score: %d\n", opponent_score);
-
+	//int r = check_island_corner_tile(b, 3);
+	/*if (r) {
+		printf("");
+	}*/
 	return (self_score - opponent_score) * 1000000 +
 		5000 * (self_connect_num[4] - opponent_connect_num[4]) +
 		1000 * (self_bridge_num - opponent_bridge_num) +
-		500 * (self_connect_num[3] - opponent_connect_num[3]) +
-		50 * (self_connect_num[2] - opponent_connect_num[2]) + rand() % 50
-		- check_island_corner_tile(b, 3)*5000;
+		//500 * (self_connect_num[3] - opponent_connect_num[3]) +
+		50 * (self_connect_num[2] - opponent_connect_num[2]) +
+		rand() % 50+
+		-count_island_corner_tile(b, 3)*500
+		- count_island_corner_tile(b, 2) * 400;
 
 }
 
 int alpha_beta(board b, int depth, int alpha, int beta, int maximum_player) {
 	total_node++;
+	if (clock() / CLOCKS_PER_SEC > 4) {
+		out_of_time_node++;
+		return 0;
+	}
 	if (depth <= 0) {
+		
 		return count_score(&b);
 	}
 	// int score = count_score(&b);
