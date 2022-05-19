@@ -6,13 +6,15 @@
 #include <math.h>
 #include<time.h>
 
-#define DEPTH 8
+#define DEPTH 2
 #define INF 0x7FFFFFFF
 #define NEGINF 0x80000000
 #define NEXTMOVENUM 1000
 #define WHITE 1
 #define BLACK 2
 #define NEXTBRIDGENUM 100
+
+int total_node = 0;
 
 static int init_board_content[] = {
 	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
@@ -68,6 +70,8 @@ int read_board(char* chess_location, char* bridge_location, board* b) {
 	for (i = 0; i < 10; i++) {
 		fscanf(b_file, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", &(b->bridge[i][0]), &(b->bridge[i][1]), &(b->bridge[i][2]), &(b->bridge[i][3]), &(b->bridge[i][4]), &(b->bridge[i][5]), &(b->bridge[i][6]), &(b->bridge[i][7]), &(b->bridge[i][8]), &(b->bridge[i][9]));
 	}
+	fclose(c_file);
+	fclose(b_file);
 	return 0;
 
 }
@@ -86,6 +90,8 @@ int write_board(char* chess_location, char* bridge_location, board* b) {
 	for (i = 0; i < 10; i++) {
 		fprintf(b_file, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", b->bridge[i][0], b->bridge[i][1], b->bridge[i][2], b->bridge[i][3], b->bridge[i][4], b->bridge[i][5], b->bridge[i][6], b->bridge[i][7], b->bridge[i][8], b->bridge[i][9]);
 	}
+	fclose(c_file);
+	fclose(b_file);
 	return 0;
 }
 
@@ -1215,7 +1221,119 @@ int count_score(board* b) {
 	int score_list[] = {
 		0,1,3,6,10,15,21,28,36, 45, 55, 66, 78
 	};
+	int self_color, opponent_color;
+	if (b->color == WHITE) {
+		self_color = WHITE;
+		opponent_color = BLACK;
+	}
+	else
+	{
+		self_color = BLACK;
+		opponent_color = WHITE;
+	}
+	int searched[10][10] = { 0 };
+	int i, j;
+	for (i = 0; i < 10; i++) {
+		for (j = 0; j < 10; j++) {
+			if ((!searched[i][j]) && b->tile[i][j]) {
+				count_all_connect_tile(b);
+				count_all_connect_tile_group_num(b);
+				int lenght = count_island_lenght(b, i, j, searched);
+				int score = score_list[lenght];
+				if (b->tile[i][j] == self_color) {
+					self_score += score;
+				}
+				else if (b->tile[i][j] == opponent_color) {
+					opponent_score += score;
+				}
+			}
+		}
+	}
+	printf("our score: %d\n", self_score);
+	printf("enemy score: %d\n", opponent_score);
+	return (self_score - opponent_score) * 10000 + rand() % 100;
 
+}
+
+int alpha_beta(board b, int depth, int alpha, int beta, int maximum_player) {
+	total_node++;
+
+	int score = count_score(&b);
+
+	int i = 0, j = 0, card = 0;
+
+	// change_player(&game);
+	// if(b.color)
+	int next_tile[NEXTMOVENUM][10][10] = { 0 };
+	int next_bridge[NEXTMOVENUM][10][10] = { 0 };
+	next_move(&b, next_tile, next_bridge);
+	if (maximum_player) {
+
+		int value = NEGINF;
+
+		for (i = 0; i < NEXTMOVENUM; i++) {
+
+			if (next_tile[i][0][0] != -1) {
+				board next_board = b;
+				int r;
+				memcpy(next_board.tile, next_tile[i], sizeof(next_board.tile));
+				next_board.computed_connected = 0;
+				next_board.computed_prohibit_tile = 0;
+				r = alpha_beta(next_board, depth - 1, alpha, beta, 0);
+				value = (r > value) ? r : value;
+				alpha = (value > alpha) ? value : alpha;
+			}
+			if (next_bridge[i][0][0] != -1) {
+				board next_board = b;
+				int r;
+				memcpy(next_board.bridge, next_bridge[i], sizeof(next_board.bridge));
+				next_board.computed_connected = 0;
+				next_board.computed_prohibit_tile = 0;
+				r = alpha_beta(next_board, depth - 1, alpha, beta, 0);
+				value = (r > value) ? r : value;
+				alpha = (value > alpha) ? value : alpha;
+			}
+			if (beta <= alpha) {
+				break;
+			}
+
+		}
+		//if (value == NEGINF) return NEGINF;
+		return value;
+	}
+	else {
+		int value = INF;
+
+		for (i = 0; i < NEXTMOVENUM; i++) {
+
+			if (next_tile[i][0][0] != -1) {
+				board next_board = b;
+				int r;
+				memcpy(next_board.tile, next_tile[i], sizeof(next_board.tile));
+				next_board.computed_connected = 0;
+				next_board.computed_prohibit_tile = 0;
+				r = alpha_beta(next_board, depth - 1, alpha, beta, 1);
+				value = (r < value) ? r : value;
+				beta = (value < beta) ? value : beta;
+			}
+			if (next_bridge[i][0][0] != -1) {
+				board next_board = b;
+				int r;
+				memcpy(next_board.bridge, next_bridge[i], sizeof(next_board.bridge));
+				next_board.computed_connected = 0;
+				next_board.computed_prohibit_tile = 0;
+				r = alpha_beta(next_board, depth - 1, alpha, beta, 1);
+				value = (r < value) ? r : value;
+				beta = (value < beta) ? value : beta;
+			}
+			if (beta <= alpha) {
+				break;
+			}
+
+		}
+		return value;
+
+	}
 }
 
 int AI(int argc, char* argv[]) {
@@ -1223,13 +1341,81 @@ int AI(int argc, char* argv[]) {
 		printf("error parameters input count\n");
 		return -1;
 	}
-	board init_board;
-	int r = read_board(argv[3], argv[4], &init_board);
+	board origin_board;
+	int r = read_board(argv[3], argv[4], &origin_board);
 	if (r != 0) {
 		printf("error read board\n");
 		return -1;
 	}
+	char player_color = argv[1][0];
+	if (player_color == 'W') {
+		origin_board.color = WHITE;
+	}
+	else if (player_color == 'B') {
+		origin_board.color = BLACK;
+	}
+	int next_tile[NEXTMOVENUM][10][10] = { 0 };
+	int next_bridge[NEXTMOVENUM][10][10] = { 0 };
+	next_move(&origin_board, next_tile, next_bridge);
+	int i;
+	int value = NEGINF;
+	int alpha = NEGINF;
+	int beta = INF;
+	int is_best_tile = -1;
+	int best_move_index = -1;
+	for (i = 0; i < NEXTMOVENUM; i++) {
 
+		if (next_tile[i][0][0] != -1) {
+			board next_board = origin_board;
+			int r;
+			memcpy(next_board.tile, next_tile[i], sizeof(next_board.tile));
+			next_board.computed_connected = 0;
+			next_board.computed_prohibit_tile = 0;
+			r = alpha_beta(next_board, DEPTH, alpha, beta, 0);
+			if (r > value) {
+				value = r;
+				alpha = (value > alpha) ? value : alpha;
+				is_best_tile = 1;
+				best_move_index = i;
+			}
+
+
+		}
+		if (next_bridge[i][0][0] != -1) {
+			board next_board = origin_board;
+			int r;
+			memcpy(next_board.bridge, next_bridge[i], sizeof(next_board.bridge));
+			next_board.computed_connected = 0;
+			next_board.computed_prohibit_tile = 0;
+			r = alpha_beta(next_board, DEPTH, alpha, beta, 0);
+			if (r > value) {
+				value = r;
+				alpha = (value > alpha) ? value : alpha;
+				is_best_tile = 1;
+				best_move_index = i;
+			}
+		}
+		if (beta <= alpha) {
+			break;
+		}
+
+	}
+	board new_board = origin_board;
+	if (is_best_tile == 1) {
+		memcpy(new_board.tile, next_tile[best_move_index], sozeof(new_board.tile));
+		printf("Best: tile\n");
+		print_board(&new_board);
+	}
+	else if (is_best_tile == 0) {
+		memcpy(new_board.bridge, next_bridge[best_move_index], sozeof(new_board.bridge));
+		printf("Best: bridge\n");
+		print_board(&new_board);
+	}
+	else {
+		printf("not find best move\n");
+	}
+	r = write_board(argv[3], argv[4], &new_board);
+	return 0;
 }
 
 int random_AI(int argc, char* argv[]) {
@@ -1350,13 +1536,14 @@ int test() {
 	*/
 	int next_bridge_pos[3][2];
 	int pos[2] = { 3, 0 };
-	count_all_connect_tile_group_num(&a);
-	memcpy(next_bridge_pos, init_board_content, sizeof(next_bridge_pos));
+	//count_all_connect_tile_group_num(&a);
+	//memcpy(next_bridge_pos, init_board_content, sizeof(next_bridge_pos));
 	int group_num = a.connected_tile_group[pos[0]][pos[1]];
 	int next_index = 0;
 	int searched[10][10] = { 0 };
 	//tag_finded(&a, searched, group_num, pos[0], pos[1], 3, next_bridge_pos, &next_index);
-	int r = count_island_lenght(&a, pos[0], pos[1], searched);
+	//int r = count_island_lenght(&a, pos[0], pos[1], searched);
+	int r = count_score(&a);
 	printf("count donw\n");
 	//print_board(&a);
 	return 0;
@@ -1364,7 +1551,7 @@ int test() {
 
 int main(int argc, char* argv[])
 {
-	test();
+	// test();
 	printf("Hello world!\n");
 	board a = {
 		BLACK,
@@ -1373,6 +1560,7 @@ int main(int argc, char* argv[])
 	};
 
 	// random_AI(argc, argv);
+	AI(argc, argv);
 	return 0;
 
 }
