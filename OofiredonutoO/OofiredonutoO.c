@@ -117,6 +117,10 @@ int count_surround_tile(int tile_board[10][10], int x, int y, int depth, int col
 	if (searched[x][y] == 1) {
 		return 0;
 	}
+	if (tile_board[x][y] == 0) {
+		searched[x][y] = 1;
+		return 0;
+	}
 	if (tile_board[x][y] == color) {
 		searched[x][y] = 1;
 		if (depth == 0) {
@@ -153,10 +157,12 @@ int count_all_connect_tile(board* b) {
 		tile_color_num = BLACK;
 
 	}
+	int search[10][10] = { 0 };
 	for (i = 0; i < 10; i++) {
 		for (j = 0; j < 10; j++) {
-			int search[10][10] = { 0 };
-			b->connected_tile[i][j] = count_surround_tile(b->tile, i, j, 5, tile_color_num, search);
+
+			memset(search, 0, sizeof(search));
+			b->connected_tile[i][j] = count_surround_tile(b->tile, i, j, 3, tile_color_num, search);
 
 		}
 		// printf("");
@@ -164,7 +170,6 @@ int count_all_connect_tile(board* b) {
 	b->computed_connected = 1;
 	return 0;
 }
-
 
 int check_surround_tile_group_num(board* b, int tile_board[10][10], int x, int y, int depth, int color, int searched[10][10], int group_num) {
 	if (searched[x][y] == 1) {
@@ -201,12 +206,13 @@ int count_all_connect_tile_group_num(board* b) {
 	int init_group[10][10] = { 0 };
 	// memcpy(b->connected_tile_group, init_group, sizeof(b->connected_tile_group));
 	int group_num = 1;
+	int search[10][10] = { 0 };
 	for (i = 0; i < 10; i++) {
 		for (j = 0; j < 10; j++) {
 			if (b->connected_tile_group[i][j] != -1) {
 				continue;
 			}
-			int search[10][10] = { 0 };
+			memset(search, 0, sizeof(search));
 			if (b->tile[i][j] == 0) {
 				b->connected_tile_group[i][j] = 0;
 				continue;
@@ -428,7 +434,7 @@ int count_island_corner_tile(board* b, int connected_num) {
 						int x = j + l;
 						if (x >= 0 && x <= 9 && y >= 0 && y <= 9) {
 							if (b->tile[y][x] == b->color && (b->connected_tile_group[y][x] != b->connected_tile_group[i][j])) {
-								prohibit +=1;
+								prohibit += 1;
 							}
 						}
 					}
@@ -1238,20 +1244,20 @@ int count_score(board* b) {
 		1000 * (self_bridge_num - opponent_bridge_num) +
 		//500 * (self_connect_num[3] - opponent_connect_num[3]) +
 		50 * (self_connect_num[2] - opponent_connect_num[2]) +
-		rand() % 50+
-		-count_island_corner_tile(b, 3)*500
+		rand() % 50 +
+		-count_island_corner_tile(b, 3) * 500
 		- count_island_corner_tile(b, 2) * 400;
 
 }
 
 int alpha_beta(board b, int depth, int alpha, int beta, int maximum_player) {
-	total_node++;
+	//total_node++;
 	if (clock() / CLOCKS_PER_SEC > 4) {
-		out_of_time_node++;
+		//out_of_time_node++;
 		return 0;
 	}
 	if (depth <= 0) {
-		
+
 		return count_score(&b);
 	}
 	// int score = count_score(&b);
