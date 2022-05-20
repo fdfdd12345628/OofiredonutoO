@@ -548,8 +548,8 @@ int L_bridge(int bridge[10][10], int start[2], int end[2]) {
 				//int bias = is_slash ? -1 : 1;
 				int x1 = up_point[1];// + (1 + i) * bias;
 				int x2 = down_point[1];// + (1 + j) * bias;
-				int y1 = up_point[0] + (1 + i) * bias;
-				int y2 = down_point[0] - (1 + j) * bias;
+				int y1 = up_point[0] - (1 + i) * bias;
+				int y2 = down_point[0] + (1 + j) * bias;
 				if (x1 >= 0 && x1 <= 9 && x2 >= 0 && x2 <= 9 && y1 >= 0 && y1 <= 9 && y2 >= 0 && y2 <= 9) {
 					if (bridge[y1][x1] != 0 && (bridge[y1][x1] == bridge[y2][x2])) {
 						return 0;
@@ -844,14 +844,19 @@ int next_move(board* b, int next_tile[NEXTMOVENUM][10][10], int next_bridge[NEXT
 	}
 	largest_bridge_num++;
 	// generate next bridge
+	board prohibit_tile_by_brdige = *b;
+	memset(prohibit_tile_by_brdige.prohibit_tile, 0, sizeof(prohibit_tile_by_brdige.prohibit_tile));
+	prohibit_tile_by_brdige.computed_prohibit_tile = 0;
+	mark_prohibit_tile_by_bridge(&prohibit_tile_by_brdige);
 	for (i = 0; i < 10; i++) {
 		for (j = 0; j < 10; j++) {
-			board temp_b = *b;
-			if (temp_b.bridge[i][j] == 0 && temp_b.tile[i][j] == temp_b.color) {
+
+			if (b->bridge[i][j] == 0 && b->tile[i][j] == b->color) {
 				// int bridge_num = temp_b.bridge[i][j];
 				printf("");
-				if (i > 1 && temp_b.tile[i - 2][j] == temp_b.color && temp_b.bridge[i - 2][j] == 0) {
-					if (temp_b.tile[i - 1][j] != 0) {
+				if (i > 1 && b->tile[i - 2][j] == b->color && b->bridge[i - 2][j] == 0) {
+					board temp_b = *b;
+					if (temp_b.tile[i - 1][j] != 0 || prohibit_tile_by_brdige.prohibit_tile[i - 1][j] != 0) {
 						//continue;
 					}
 					else {
@@ -871,9 +876,12 @@ int next_move(board* b, int next_tile[NEXTMOVENUM][10][10], int next_bridge[NEXT
 						}
 					}
 				}
-				if (i > 1 && j > 0 && temp_b.tile[i - 2][j - 1] == temp_b.color && temp_b.bridge[i - 2][j - 1] == 0) {
+				if (i > 1 && j > 0 && b->tile[i - 2][j - 1] == b->color && b->bridge[i - 2][j - 1] == 0) {
+					board temp_b = *b;
 					if (temp_b.tile[i - 1][j] != 0 ||
-						temp_b.tile[i - 1][j - 1] != 0) {
+						temp_b.tile[i - 1][j - 1] != 0 ||
+						prohibit_tile_by_brdige.prohibit_tile[i - 1][j] != 0 ||
+						prohibit_tile_by_brdige.prohibit_tile[i - 1][j - 1] != 0) {
 						//continue;
 					}
 					else {
@@ -893,8 +901,9 @@ int next_move(board* b, int next_tile[NEXTMOVENUM][10][10], int next_bridge[NEXT
 						}
 					}
 				}
-				if (i > 1 && j > 1 && temp_b.tile[i - 2][j - 2] == temp_b.color && temp_b.bridge[i - 2][j - 2] == 0) {
-					if (temp_b.tile[i - 1][j - 1] != 0) {
+				if (i > 1 && j > 1 && b->tile[i - 2][j - 2] == b->color && b->bridge[i - 2][j - 2] == 0) {
+					board temp_b = *b;
+					if (temp_b.tile[i - 1][j - 1] != 0 || prohibit_tile_by_brdige.prohibit_tile[i - 1][j - 1] != 0) {
 						//continue;
 					}
 					else {
@@ -914,9 +923,12 @@ int next_move(board* b, int next_tile[NEXTMOVENUM][10][10], int next_bridge[NEXT
 						}
 					}
 				}
-				if (i > 0 && j > 1 && temp_b.tile[i - 1][j - 2] == temp_b.color && temp_b.bridge[i - 1][j - 2] == 0) {
+				if (i > 0 && j > 1 && b->tile[i - 1][j - 2] == b->color && b->bridge[i - 1][j - 2] == 0) {
+					board temp_b = *b;
 					if (temp_b.tile[i - 1][j - 1] != 0 ||
-						temp_b.tile[i][j - 1] != 0) {
+						temp_b.tile[i][j - 1] != 0 ||
+						prohibit_tile_by_brdige.prohibit_tile[i - 1][j - 1] != 0 ||
+						prohibit_tile_by_brdige.prohibit_tile[i][j - 1] != 0) {
 						//continue;
 					}
 					else {
@@ -936,8 +948,9 @@ int next_move(board* b, int next_tile[NEXTMOVENUM][10][10], int next_bridge[NEXT
 						}
 					}
 				}
-				if (j > 1 && temp_b.tile[i][j - 2] == temp_b.color && temp_b.bridge[i][j - 2] == 0) {
-					if (temp_b.tile[i][j - 1] != 0) {
+				if (j > 1 && b->tile[i][j - 2] == b->color && b->bridge[i][j - 2] == 0) {
+					board temp_b = *b;
+					if (temp_b.tile[i][j - 1] != 0 || prohibit_tile_by_brdige.prohibit_tile[i][j - 1] != 0) {
 						//continue;
 					}
 					else {
@@ -957,9 +970,12 @@ int next_move(board* b, int next_tile[NEXTMOVENUM][10][10], int next_bridge[NEXT
 						}
 					}
 				}
-				if (i < 9 && j > 1 && temp_b.tile[i + 1][j - 2] == temp_b.color && temp_b.bridge[i + 1][j - 2] == 0) {
+				if (i < 9 && j > 1 && b->tile[i + 1][j - 2] == b->color && b->bridge[i + 1][j - 2] == 0) {
+					board temp_b = *b;
 					if (temp_b.tile[i + 1][j - 1] != 0 ||
-						temp_b.tile[i][j - 1] != 0) {
+						temp_b.tile[i][j - 1] != 0 ||
+						prohibit_tile_by_brdige.prohibit_tile[i + 1][j - 1] != 0 ||
+						prohibit_tile_by_brdige.prohibit_tile[i][j - 1] != 0) {
 						//continue;
 					}
 					else {
@@ -979,8 +995,9 @@ int next_move(board* b, int next_tile[NEXTMOVENUM][10][10], int next_bridge[NEXT
 						}
 					}
 				}
-				if (i < 8 && j > 1 && temp_b.tile[i + 2][j - 2] == temp_b.color && temp_b.bridge[i + 2][j - 2] == 0) {
-					if (temp_b.tile[i + 1][j - 1] != 0) {
+				if (i < 8 && j > 1 && b->tile[i + 2][j - 2] == b->color && b->bridge[i + 2][j - 2] == 0) {
+					board temp_b = *b;
+					if (temp_b.tile[i + 1][j - 1] != 0 || prohibit_tile_by_brdige.prohibit_tile[i + 1][j - 1] != 0) {
 						//continue;
 					}
 					else {
@@ -1000,9 +1017,12 @@ int next_move(board* b, int next_tile[NEXTMOVENUM][10][10], int next_bridge[NEXT
 						}
 					}
 				}
-				if (i < 8 && j > 0 && temp_b.tile[i + 2][j - 1] == temp_b.color && temp_b.bridge[i + 2][j - 1] == 0) {
+				if (i < 8 && j > 0 && b->tile[i + 2][j - 1] == b->color && b->bridge[i + 2][j - 1] == 0) {
+					board temp_b = *b;
 					if (temp_b.tile[i + 1][j - 1] != 0 ||
-						temp_b.tile[i + 1][j] != 0) {
+						temp_b.tile[i + 1][j] != 0 ||
+						prohibit_tile_by_brdige.prohibit_tile[i + 1][j - 1] != 0 ||
+						prohibit_tile_by_brdige.prohibit_tile[i + 1][j] != 0) {
 						//continue;
 					}
 					else {
@@ -1022,8 +1042,9 @@ int next_move(board* b, int next_tile[NEXTMOVENUM][10][10], int next_bridge[NEXT
 						}
 					}
 				}
-				if (i < 8 && temp_b.tile[i + 2][j] == temp_b.color && temp_b.bridge[i + 2][j] == 0) {
-					if (temp_b.tile[i + 1][j] != 0) {
+				if (i < 8 && b->tile[i + 2][j] == b->color && b->bridge[i + 2][j] == 0) {
+					board temp_b = *b;
+					if (temp_b.tile[i + 1][j] != 0 || prohibit_tile_by_brdige.prohibit_tile[i + 1][j] != 0) {
 						//continue;
 					}
 					else {
@@ -1043,9 +1064,12 @@ int next_move(board* b, int next_tile[NEXTMOVENUM][10][10], int next_bridge[NEXT
 						}
 					}
 				}
-				if (i < 8 && j < 9 && temp_b.tile[i + 2][j + 1] == temp_b.color && temp_b.bridge[i + 2][j + 1] == 0) {
+				if (i < 8 && j < 9 && b->tile[i + 2][j + 1] == b->color && b->bridge[i + 2][j + 1] == 0) {
+					board temp_b = *b;
 					if (temp_b.tile[i + 1][j] != 0 ||
-						temp_b.tile[i + 1][j + 1] != 0) {
+						temp_b.tile[i + 1][j + 1] != 0 ||
+						prohibit_tile_by_brdige.prohibit_tile[i + 1][j] != 0 ||
+						prohibit_tile_by_brdige.prohibit_tile[i + 1][j + 1] != 0) {
 						//continue;
 					}
 					else {
@@ -1065,8 +1089,9 @@ int next_move(board* b, int next_tile[NEXTMOVENUM][10][10], int next_bridge[NEXT
 						}
 					}
 				}
-				if (i < 8 && j < 8 && temp_b.tile[i + 2][j + 2] == temp_b.color && temp_b.bridge[i + 2][j + 2] == 0) {
-					if (temp_b.tile[i + 1][j + 1] != 0) {
+				if (i < 8 && j < 8 && b->tile[i + 2][j + 2] == b->color && b->bridge[i + 2][j + 2] == 0) {
+					board temp_b = *b;
+					if (temp_b.tile[i + 1][j + 1] != 0 || prohibit_tile_by_brdige.prohibit_tile[i + 1][j + 1] != 0) {
 						//continue;
 					}
 					else {
@@ -1086,9 +1111,12 @@ int next_move(board* b, int next_tile[NEXTMOVENUM][10][10], int next_bridge[NEXT
 						}
 					}
 				}
-				if (i < 9 && j < 8 && temp_b.tile[i + 1][j + 2] == temp_b.color && temp_b.bridge[i + 1][j + 2] == 0) {
+				if (i < 9 && j < 8 && b->tile[i + 1][j + 2] == b->color && b->bridge[i + 1][j + 2] == 0) {
+					board temp_b = *b;
 					if (temp_b.tile[i + 1][j + 1] != 0 ||
-						temp_b.tile[i][j + 1] != 0) {
+						temp_b.tile[i][j + 1] != 0 ||
+						prohibit_tile_by_brdige.prohibit_tile[i + 1][j + 1] != 0 ||
+						prohibit_tile_by_brdige.prohibit_tile[i][j + 1] != 0) {
 						//continue;
 					}
 					else {
@@ -1108,8 +1136,9 @@ int next_move(board* b, int next_tile[NEXTMOVENUM][10][10], int next_bridge[NEXT
 						}
 					}
 				}
-				if (j < 8 && temp_b.tile[i][j + 2] == temp_b.color && temp_b.bridge[i][j + 2] == 0) {
-					if (temp_b.tile[i][j + 1] != 0) {
+				if (j < 8 && b->tile[i][j + 2] == b->color && b->bridge[i][j + 2] == 0) {
+					board temp_b = *b;
+					if (temp_b.tile[i][j + 1] != 0 || prohibit_tile_by_brdige.prohibit_tile[i][j + 1] != 0) {
 						//continue;
 					}
 					else {
@@ -1130,9 +1159,12 @@ int next_move(board* b, int next_tile[NEXTMOVENUM][10][10], int next_bridge[NEXT
 					}
 
 				}
-				if (i > 0 && j < 8 && temp_b.tile[i - 1][j + 2] == temp_b.color && temp_b.bridge[i - 1][j + 2] == 0) {
+				if (i > 0 && j < 8 && b->tile[i - 1][j + 2] == b->color && b->bridge[i - 1][j + 2] == 0) {
+					board temp_b = *b;
 					if (temp_b.tile[i][j + 1] != 0 ||
-						temp_b.tile[i - 1][j + 1] != 0) {
+						temp_b.tile[i - 1][j + 1] != 0 ||
+						prohibit_tile_by_brdige.prohibit_tile[i][j + 1] != 0 ||
+						prohibit_tile_by_brdige.prohibit_tile[i - 1][j + 1] != 0) {
 						//continue;
 					}
 					else {
@@ -1152,8 +1184,9 @@ int next_move(board* b, int next_tile[NEXTMOVENUM][10][10], int next_bridge[NEXT
 						}
 					}
 				}
-				if (i > 1 && j < 8 && temp_b.tile[i - 2][j + 2] == temp_b.color && temp_b.bridge[i - 2][j + 2] == 0) {
-					if (temp_b.tile[i - 1][j + 1] != 0) {
+				if (i > 1 && j < 8 && b->tile[i - 2][j + 2] == b->color && b->bridge[i - 2][j + 2] == 0) {
+					board temp_b = *b;
+					if (temp_b.tile[i - 1][j + 1] != 0 || prohibit_tile_by_brdige.prohibit_tile[i - 1][j + 1] != 0) {
 						//continue;
 					}
 					else {
@@ -1173,9 +1206,12 @@ int next_move(board* b, int next_tile[NEXTMOVENUM][10][10], int next_bridge[NEXT
 						}
 					}
 				}
-				if (i > 1 && j < 9 && temp_b.tile[i - 2][j + 1] == temp_b.color && temp_b.bridge[i - 2][j + 1] == 0) {
+				if (i > 1 && j < 9 && b->tile[i - 2][j + 1] == b->color && b->bridge[i - 2][j + 1] == 0) {
+					board temp_b = *b;
 					if (temp_b.tile[i - 1][j + 1] != 0 ||
-						temp_b.tile[i - 1][j] != 0) {
+						temp_b.tile[i - 1][j] != 0 ||
+						prohibit_tile_by_brdige.prohibit_tile[i - 1][j + 1] != 0 ||
+						prohibit_tile_by_brdige.prohibit_tile[i - 1][j] != 0) {
 						//continue;
 					}
 					else {
@@ -1669,7 +1705,7 @@ int test() {
 
 	int start[2] = { 5,0 };
 	int end[2] = { 7,2 };
-	r = cross_bridge(a.bridge, start,end);
+	r = cross_bridge(a.bridge, start, end);
 	count_all_connect_tile_group_num(&a);
 	*/
 	int next_bridge_pos[3][2];
